@@ -1,0 +1,26 @@
+[package]
+name = "mirrorlist-server"
+version = "1.0.0"
+authors = ["Adrian Reber <adrian@lisas.de"]
+
+[profile.release]
+lto = true
+
+[dependencies]
+hyper = "0.12"
+log = "0.4"
+pretty_env_logger = "0.3"
+chrono = "0.4"
+futures = "0.1.21"
+protobuf = "2.6.0"
+url = "2.1.0"
+regex = "1"
+ipnet = "2.0.0"
+treebitmap = "0.4.0"
+maxminddb = "0.13.0"
+rand = "0.7"
+itertools = "0.8.0"
+getopts = "0.2"
+
+[build-dependencies]
+protoc-rust = "2.0"
