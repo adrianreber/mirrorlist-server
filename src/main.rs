@@ -866,7 +866,7 @@ fn do_mirrorlist(
     }
     info!("Found {} possible mirrors", mirrors_found);
 
-    println!(
+    info!(
         "mirrorlist: {} found its best mirror from {}",
         client_ip, found_via
     );
