@@ -411,7 +411,7 @@ fn trim_to_preferred_protocols(
     }
 }
 
-fn http_response(metalink: bool, message: String) -> BoxFut {
+fn http_response(metalink: bool, message: String, code: hyper::StatusCode) -> BoxFut {
     let mut response = Response::new(Body::empty());
     *response.body_mut() = match metalink {
         true => {
@@ -423,6 +423,7 @@ fn http_response(metalink: bool, message: String) -> BoxFut {
         }
         _ => Body::from(message),
     };
+    *response.status_mut() = code;
     Box::new(future::ok(response))
 }
 
@@ -479,6 +480,7 @@ fn do_mirrorlist(
         return http_response(
             metalink,
             "# either path=, or repo= and arch= must be specified".to_string(),
+            StatusCode::OK,
         );
     }
 
@@ -508,7 +510,11 @@ fn do_mirrorlist(
             dir.push_str(&path.trim_end_matches(&file).trim_end_matches('/'));
             let index = find_in_mirrorlist_cache(&mirrorlist_caches, &dir);
             if index == -1 {
-                return http_response(metalink, "error: invalid path".to_string());
+                return http_response(
+                    metalink,
+                    "error: invalid path".to_string(),
+                    StatusCode::NOT_FOUND,
+                );
             }
             cache = &mirrorlist_caches[index as usize];
         } else {
@@ -533,7 +539,7 @@ fn do_mirrorlist(
         let arch = get_param(&query_params, "arch");
         header.push_str(&format!("# repo = {} arch = {} ", repo, arch));
         if find_in_string_bool_map(&mirrorlist.get_DisabledRepositoryCache(), &repo) {
-            return http_response(metalink, "repo disabled".to_string());
+            return http_response(metalink, "repo disabled".to_string(), StatusCode::OK);
         }
         let key = find_in_string_string_map(
             &mirrorlist.get_RepoArchToDirectoryName(),
@@ -555,7 +561,7 @@ fn do_mirrorlist(
                         .push_str(&format!("# repo={}&arch={}\n", elements[0], elements[1]));
                 }
             }
-            return http_response(metalink, repo_information);
+            return http_response(metalink, repo_information, StatusCode::NOT_FOUND);
         }
         dir.push_str(&key);
         if metalink {
@@ -590,6 +596,7 @@ fn do_mirrorlist(
             return http_response(
                 metalink,
                 "Cannot parse client IP address. Aborting.".to_string(),
+                StatusCode::INTERNAL_SERVER_ERROR,
             )
         }
     };
