@@ -1410,25 +1410,18 @@ async fn main() {
         let lf = log_file.clone();
         async move {
             Ok::<_, Infallible>(service_fn(move |req| {
-                let val = val.clone();
-                let asn = asn.clone();
-                let i2 = i2.clone();
-                let geoip2 = geoip2.clone();
-                let cc = cc.clone();
-                let lf = lf.clone();
-                async move {
-                    Ok::<_, Infallible>(do_mirrorlist(
-                        req,
-                        &val,
-                        &remote_addr.ip(),
-                        &asn,
-                        &i2,
-                        &geoip2,
-                        &cc,
-                        &lf,
-                        minimum,
-                    ))
-                }
+                let response = do_mirrorlist(
+                    req,
+                    &val,
+                    &remote_addr.ip(),
+                    &asn,
+                    &i2,
+                    &geoip2,
+                    &cc,
+                    &lf,
+                    minimum,
+                );
+                async move { Ok::<_, Infallible>(response) }
             }))
         }
     });
