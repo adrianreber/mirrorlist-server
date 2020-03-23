@@ -1,18 +1,4 @@
 #![deny(warnings)]
-extern crate chrono;
-extern crate futures;
-extern crate getopts;
-extern crate hyper;
-extern crate ipnet;
-extern crate itertools;
-#[macro_use]
-extern crate log;
-extern crate maxminddb;
-extern crate pretty_env_logger;
-extern crate protobuf;
-extern crate rand;
-extern crate regex;
-extern crate treebitmap;
 
 mod protos;
 
@@ -21,15 +7,14 @@ use crate::protos::mirrormanager::{
     IntRepeatedStringMap, IntStringMap, MirrorList, MirrorListCacheType, StringBoolMap,
     StringRepeatedIntMap, StringStringMap,
 };
-use futures::future;
 use getopts::Options;
 use hyper::header::{HeaderValue, CONTENT_TYPE, LOCATION};
-use hyper::rt::Future;
 use hyper::server::conn::AddrStream;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, StatusCode};
 use ipnet::IpNet;
 use itertools::Itertools;
+use log::{error, info};
 use maxminddb::{geoip2, Reader};
 use protobuf::parse_from_reader;
 use rand::distributions::Distribution;
@@ -39,6 +24,7 @@ use rand::thread_rng;
 use regex::Regex;
 use std::cmp;
 use std::collections::HashMap;
+use std::convert::Infallible;
 use std::env;
 use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
@@ -379,7 +365,7 @@ fn append_path(
 
 fn trim_to_preferred_protocols(
     hosts_and_urls: &mut Vec<(i64, Vec<String>)>,
-    try: &Vec<&str>,
+    try_protocols: &Vec<&str>,
     max: usize,
 ) {
     let mut result: Vec<(i64, Vec<String>)> = Vec::new();
@@ -388,7 +374,7 @@ fn trim_to_preferred_protocols(
         let mut url: Vec<String> = Vec::new();
         count = 0;
         for hcurl in hcurls {
-            for p in try {
+            for p in try_protocols {
                 let prot = String::from(&format!("{}:", p));
                 if hcurl.starts_with(&prot) {
                     url.push(String::from(&hcurl.to_string()));
@@ -411,7 +397,7 @@ fn trim_to_preferred_protocols(
     }
 }
 
-fn http_response(metalink: bool, message: String, code: hyper::StatusCode) -> BoxFut {
+fn http_response(metalink: bool, message: String, code: hyper::StatusCode) -> Response<Body> {
     let mut response = Response::new(Body::empty());
     *response.body_mut() = match metalink {
         true => {
@@ -424,10 +410,8 @@ fn http_response(metalink: bool, message: String, code: hyper::StatusCode) -> Bo
         _ => Body::from(message),
     };
     *response.status_mut() = code;
-    Box::new(future::ok(response))
+    response
 }
-
-type BoxFut = Box<dyn Future<Item = Response<Body>, Error = hyper::Error> + Send>;
 
 fn do_mirrorlist(
     req: Request<Body>,
@@ -445,7 +429,7 @@ fn do_mirrorlist(
     cc: &HashMap<String, String>,
     mut log_file: &File,
     minimum: usize,
-) -> BoxFut {
+) -> Response<Body> {
     let mut response = Response::new(Body::empty());
 
     let metalink = req.uri().path().ends_with("/metalink");
@@ -454,7 +438,7 @@ fn do_mirrorlist(
     if !req.uri().path().ends_with("/mirrorlist") && !metalink {
         *response.status_mut() = StatusCode::NOT_FOUND;
         *response.body_mut() = Body::from("We don't serve their kind here!");
-        return Box::new(future::ok(response));
+        return response;
     }
 
     // Split query string from url
@@ -576,7 +560,7 @@ fn do_mirrorlist(
         if index == -1 {
             *response.body_mut() = Body::from("mirrorlist cache index out of range, you broke it!");
             *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-            return Box::new(future::ok(response));
+            return response;
         }
         cache = &mirrorlist_caches[index as usize];
     }
@@ -983,7 +967,7 @@ fn do_mirrorlist(
             .insert(CONTENT_TYPE, HeaderValue::from_static("text/plain"));
     }
 
-    Box::new(future::ok(response))
+    response
 }
 
 fn metalink_details(fd: &FileDetailsType, indent: String) -> String {
@@ -1219,7 +1203,8 @@ fn print_usage(program: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     pretty_env_logger::init();
 
     // This is the minimum number of mirrors which should be returned
@@ -1423,25 +1408,29 @@ fn main() {
         let geoip2 = geoip_reader.clone();
         let cc = cc_redirect.clone();
         let lf = log_file.clone();
-        service_fn(move |req| {
-            do_mirrorlist(
-                req,
-                &val,
-                &remote_addr.ip(),
-                &asn,
-                &i2,
-                &geoip2,
-                &cc,
-                &lf,
-                minimum,
-            )
-        })
+        async move {
+            Ok::<_, Infallible>(service_fn(move |req| {
+                let response = do_mirrorlist(
+                    req,
+                    &val,
+                    &remote_addr.ip(),
+                    &asn,
+                    &i2,
+                    &geoip2,
+                    &cc,
+                    &lf,
+                    minimum,
+                );
+                async move { Ok::<_, Infallible>(response) }
+            }))
+        }
     });
 
-    let server = Server::bind(&addr)
-        .serve(new_service)
-        .map_err(|e| eprintln!("server error: {}", e));
+    let server = Server::bind(&addr).serve(new_service);
 
     println!("Listening on http://{}", addr);
-    hyper::rt::run(server);
+
+    if let Err(err) = server.await {
+        eprintln!("server error: {}", err);
+    }
 }

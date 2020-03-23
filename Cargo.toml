@@ -2,6 +2,7 @@
 name = "mirrorlist-server"
 version = "2.0.0"
 authors = ["Adrian Reber <adrian@lisas.de"]
+edition = "2018"
 
 [profile.release]
 lto = true
@@ -11,7 +12,6 @@ hyper = "0.13"
 log = "0.4"
 pretty_env_logger = "0.4"
 chrono = "0.4"
-futures = "0.1.21"
 protobuf = "2.6.0"
 url = "2.1.1"
 regex = "1"
@@ -21,6 +21,10 @@ maxminddb = "0.13.0"
 rand = "0.7"
 itertools = "0.8.0"
 getopts = "0.2"
+
+[dependencies.tokio]
+version = "0.2.13"
+features = ["macros"]
 
 [build-dependencies]
 protoc-rust = "2.0"
