@@ -1031,13 +1031,13 @@ fn do_metalink(
     let fdcf = &mirrorlist.get_FileDetailsCache()[fdcdc_index as usize]
         .get_FileDetailsCacheFiles()
         .to_vec();
-    let mut no_repomd = true;
+    let mut wrong_file = true;
     for e in fdcf {
-        if e.get_filename() == "repomd.xml" {
-            no_repomd = false;
+        if e.get_filename() == file {
+            wrong_file = false;
         }
     }
-    if no_repomd || fdcf.len() == 0 {
+    if wrong_file || fdcf.len() == 0 {
         return (
             StatusCode::NOT_FOUND,
             metalink_failuredoc(format!("{}/{} not found or has not metalink", dir, file)),
@@ -1048,7 +1048,7 @@ fn do_metalink(
     doc.push_str(&format!("  <file name=\"{}\">\n", file));
     let mut count = 0;
     for e in fdcf {
-        if e.get_filename() != "repomd.xml" {
+        if e.get_filename() != file {
             continue;
         }
         for fd in e.get_FileDetails() {
