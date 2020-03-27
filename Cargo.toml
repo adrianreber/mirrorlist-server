@@ -27,4 +27,4 @@ version = "0.2.13"
 features = ["macros"]
 
 [build-dependencies]
-protoc-rust = "2.11"
+protoc-rust = "2.12"
