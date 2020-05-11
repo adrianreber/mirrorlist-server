@@ -1,15 +1,10 @@
-extern crate protoc_rust;
-
-use protoc_rust::Customize;
+extern crate protobuf_codegen_pure;
 
 fn main() {
-    protoc_rust::run(protoc_rust::Args {
-        out_dir: "src/protos",
-        input: &["protos/mirrormanager.proto"],
-        includes: &["protos"],
-        customize: Customize {
-            ..Default::default()
-        },
-    })
-    .expect("protoc");
+    protobuf_codegen_pure::Codegen::new()
+        .out_dir("src/protos")
+        .inputs(&["protos/mirrormanager.proto"])
+        .include("protos")
+        .run()
+        .expect("Codegen failed.");
 }
