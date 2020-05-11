@@ -1434,3 +1434,6 @@ async fn main() {
         eprintln!("server error: {}", err);
     }
 }
+
+#[cfg(test)]
+mod test;
