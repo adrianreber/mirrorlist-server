@@ -743,7 +743,7 @@ fn do_mirrorlist(
     let mut only_country = false;
     if requested_countries.len() > 0 {
         for country in &requested_countries {
-            if country == &"global".to_uppercase() {
+            if &country.to_uppercase() == &"global".to_uppercase() {
                 country_results.append(&mut cache.get_Global().to_vec());
                 let ret = do_global(
                     &mirrorlist.get_HostCountryAllowedCache(),
