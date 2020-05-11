@@ -1,6 +1,6 @@
 [package]
 name = "mirrorlist-server"
-version = "2.2.0"
+version = "2.3.0"
 authors = ["Adrian Reber <adrian@lisas.de"]
 edition = "2018"
 
