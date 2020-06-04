@@ -1,12 +1,7 @@
 #![deny(warnings)]
 
-mod protos;
+pub mod lib;
 
-use crate::protos::mirrormanager::{
-    FileDetailsCacheDirectoryType, FileDetailsType, IntIntMap, IntRepeatedIntMap,
-    IntRepeatedStringMap, IntStringMap, MirrorList, MirrorListCacheType, StringBoolMap,
-    StringRepeatedIntMap, StringStringMap,
-};
 use getopts::Options;
 use hyper::header::{HeaderValue, CONTENT_TYPE, LOCATION};
 use hyper::server::conn::AddrStream;
@@ -14,6 +9,15 @@ use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, StatusCode};
 use ipnet::IpNet;
 use itertools::Itertools;
+use lib::common::{
+    find_in_file_details_cache_directory_cache, find_in_int_int_map, find_in_int_repeated_int_map,
+    find_in_int_repeated_string_map, find_in_int_string_map, find_in_mirrorlist_cache,
+    find_in_string_bool_map, find_in_string_repeated_int_map, find_in_string_string_map,
+};
+use lib::protos::mirrormanager::{
+    FileDetailsType, IntIntMap, IntRepeatedStringMap, IntStringMap, MirrorList,
+    MirrorListCacheType, StringRepeatedIntMap, StringStringMap,
+};
 use log::{error, info};
 use maxminddb::{geoip2, Reader};
 use protobuf::parse_from_reader;
@@ -75,101 +79,6 @@ fn check_for_param(params: &HashMap<&str, &str>, check: &str) -> bool {
         }
     }
     false
-}
-
-fn find_in_file_details_cache_directory_cache(
-    fdcdc: &[FileDetailsCacheDirectoryType],
-    dir: &str,
-) -> i64 {
-    let mut index = 0;
-    for e in fdcdc {
-        if e.get_directory() == dir {
-            return index;
-        }
-        index += 1;
-    }
-    -1
-}
-
-fn find_in_mirrorlist_cache(mlc: &[MirrorListCacheType], dir: &str) -> i64 {
-    let mut index = 0;
-    for mirrorlist_cache in mlc {
-        if mirrorlist_cache.get_directory() == dir {
-            return index;
-        }
-        index += 1;
-    }
-    -1
-}
-
-fn find_in_string_string_map(ssm: &[StringStringMap], key: &str) -> String {
-    let mut result = String::new();
-    for param in ssm {
-        if param.get_key() == key {
-            result.push_str(&param.get_value());
-        }
-    }
-    result
-}
-
-fn find_in_string_bool_map(sbm: &[StringBoolMap], key: &str) -> bool {
-    for param in sbm {
-        if param.get_key() == key {
-            return param.get_value();
-        }
-    }
-    false
-}
-
-fn find_in_int_int_map(iim: &[IntIntMap], key: i64) -> i64 {
-    for e in iim {
-        if e.get_key() == key {
-            return e.get_value();
-        }
-    }
-    0
-}
-
-fn find_in_int_string_map(ism: &[IntStringMap], key: i64) -> String {
-    for e in ism {
-        if e.get_key() == key {
-            return String::from(e.get_value());
-        }
-    }
-    String::new()
-}
-
-fn find_in_int_repeated_string_map(irsm: &[IntRepeatedStringMap], key: i64) -> i64 {
-    let mut index = 0;
-    for param in irsm {
-        if param.get_key() == key {
-            return index;
-        }
-        index += 1;
-    }
-    -1
-}
-
-fn find_in_int_repeated_int_map(irim: &[IntRepeatedIntMap], key: i64) -> i64 {
-    let mut index = 0;
-    for param in irim {
-        if param.get_key() == key {
-            return index;
-        }
-        index += 1;
-    }
-    -1
-}
-
-fn find_in_string_repeated_int_map(irim: &[StringRepeatedIntMap], key: &String) -> i64 {
-    let mut index = 0;
-    for param in irim {
-        if param.get_key() == key {
-            return index;
-        }
-        index += 1;
-    }
-    -1
 }
 
 fn find_in_netblock_country_cache(nbcc: &[StringStringMap], client_ip: &IpAddr) -> String {
@@ -1434,6 +1343,3 @@ async fn main() {
         eprintln!("server error: {}", err);
     }
 }
-
-#[cfg(test)]
-mod test;

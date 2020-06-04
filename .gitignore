@@ -1,2 +1,2 @@
-src/protos/mirrormanager.rs
+src/bin/lib/protos/mirrormanager.rs
 target
