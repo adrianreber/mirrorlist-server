@@ -26,6 +26,17 @@ library to reduce the number of involved components.
 In addition to being simpler this implementation also requires less memory
 than the Python version.
 
+generate-mirrorlist-cache
+=========================
+
+Another re-implementation of a part of MirrorManager2. generate-mirrorlist-cache
+talks to the MirrorManager2 database to create the input files for the previously
+mentioned mirrorlist-server. generate-mirrorlist-cache is a drop in replacement
+for the Python script mm2_refresh_mirrorlist_cache.
+
+In Fedora's setup the Python version requires up to 50 minutes and 10GB of memory.
+This Rust version is finished in under one minute and only requires 600MB.
+
 Building
 --------
 
@@ -37,7 +48,7 @@ Usage
 -----
 
 The mirrorlist-server requires multiple input files which all can be created
-using MirrorManager2.
+using MirrorManager2 or generate-mirrorlist-cache.
 
 There is also a container which can be used to quickly start-up an instance
 of the Rust based mirrorlist-server::
