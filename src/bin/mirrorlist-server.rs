@@ -567,7 +567,7 @@ fn do_mirrorlist(
                 _ => -1,
             };
             let i = find_in_int_repeated_int_map(host_asn_cache, asn_number);
-            if i > 0 {
+            if i != -1 {
                 for id in host_asn_cache[i as usize].get_value() {
                     asn_results.push(*id);
                 }
