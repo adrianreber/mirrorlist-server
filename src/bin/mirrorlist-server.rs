@@ -594,7 +594,7 @@ fn do_mirrorlist(
         client_country = match geoip2.lookup::<geoip2::Country>(client_ip) {
             Ok(c) => match c.country {
                 Some(co) => match co.iso_code {
-                    Some(iso) => iso,
+                    Some(iso) => iso.to_string(),
                     _ => "N/A".to_string(),
                 },
                 _ => "N/A".to_string(),
