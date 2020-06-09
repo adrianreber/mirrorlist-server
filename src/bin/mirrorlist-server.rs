@@ -742,6 +742,47 @@ fn do_mirrorlist(
     }
     info!("mirrors_found after geoip continent {:#?}", mirrors_found);
 
+    {
+        /* mirrors_found contains the number of mirrors which are
+         * good mirrors concerning the location. Now check if those
+         * mirrors actually carry the content we are looking for. */
+        let mut actual_hosts: Vec<i64> = Vec::new();
+        for e in &netblock_results {
+            actual_hosts.push(e.1.clone());
+        }
+
+        actual_hosts.append(&mut asn_results.clone());
+        actual_hosts.append(&mut i2_results.clone());
+        actual_hosts.append(&mut country_results.clone());
+        actual_hosts.append(&mut geoip_results.clone());
+        actual_hosts.append(&mut continent_results.clone());
+
+        let actual_hosts: Vec<_> = actual_hosts.into_iter().unique().collect();
+
+        let mut hosts_and_urls = append_path(
+            &actual_hosts,
+            &cache,
+            &mirrorlist.get_HCUrlCache(),
+            file.clone(),
+            path_is_dir,
+        );
+        if check_for_param(&query_params, "protocol") {
+            let mut try_protocols: Vec<&str>;
+            let protocols = get_param(&query_params, "protocol");
+            try_protocols = protocols.split(",").collect();
+            if try_protocols.len() != 0 {
+                try_protocols.sort();
+                try_protocols.dedup();
+            }
+            trim_to_preferred_protocols(&mut hosts_and_urls, &try_protocols, try_protocols.len());
+        }
+        mirrors_found = hosts_and_urls.len();
+        info!(
+            "Number of mirrors before global with the actual content: {}",
+            mirrors_found
+        );
+    }
+
     let mut global_results: Vec<i64> = Vec::new();
     if mirrors_found < minimum && only_country == false {
         // Use mirrors from everywhere
@@ -752,10 +793,10 @@ fn do_mirrorlist(
             client_country,
         );
         header.push_str(&ret);
-        mirrors_found += global_results.len();
-        if found_via == "" {
+        if found_via == "" || mirrors_found == 0 {
             found_via = String::from("global");
         }
+        mirrors_found += global_results.len();
     }
     info!("Found {} possible mirrors", mirrors_found);
 
