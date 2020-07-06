@@ -1141,3 +1141,6 @@ fn main() {
     }
     cos.flush().unwrap();
 }
+
+#[cfg(test)]
+mod generate_mirrorlist_cache_test;
