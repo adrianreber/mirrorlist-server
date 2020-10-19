@@ -30,7 +30,7 @@ console = "0.12.0"
 
 [dependencies.tokio]
 version = "0.3.0"
-features = ["macros"]
+features = ["macros", "rt-multi-thread"]
 
 [build-dependencies]
 protobuf-codegen-pure = "2.14.0"
