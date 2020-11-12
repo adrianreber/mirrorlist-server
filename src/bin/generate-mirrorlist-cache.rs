@@ -855,16 +855,19 @@ fn get_mlc(
             if !is_host_active(host.clone()) {
                 continue;
             }
-            if is_host_private(host.clone()) && !host.13 {
-                continue;
-            }
 
+            // All possible mirrors are part of by_hostid
             if hcurl_cat_url_id_hash.contains_key(hc_id) {
                 let hcurl_ids = &hcurl_cat_url_id_hash[hc_id];
                 let mut hcurl_id = IntRepeatedIntMap::new();
                 hcurl_id.set_key(*h_id);
                 hcurl_id.set_value(hcurl_ids.to_vec());
                 by_hostid.push(hcurl_id);
+            }
+
+            // Private mirrors can still select to be available via Internet2
+            if is_host_private(host.clone()) && !host.13 {
+                continue;
             }
 
             if !host.5.is_none() && host.12 {
@@ -882,6 +885,7 @@ fn get_mlc(
                 }
             }
 
+            // But a private mirror should never be added to 'Global'
             if is_host_private(host.clone()) {
                 continue;
             }
