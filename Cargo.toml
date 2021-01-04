@@ -29,7 +29,7 @@ indicatif = "0.15.0"
 console = "0.14.0"
 
 [dependencies.tokio]
-version = "0.3.3"
+version = "1.0.1"
 features = ["macros", "rt-multi-thread"]
 
 [build-dependencies]
