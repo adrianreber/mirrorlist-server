@@ -362,7 +362,9 @@ fn parse_ip(input: String, host: String) -> Result<Vec<IpNet>, String> {
                         /* Probably DNS name */
                         let ips = lookup_host(&ip_string);
                         if ips.is_err() {
-                            println!("DNS resolve error {} for host {}\n", ip_string, host);
+                            if DEBUG.load(Ordering::SeqCst) == 1 {
+                                println!("DNS resolve error {} for host {}\n", ip_string, host);
+                            }
                             return Err("Parse Error".to_string());
                         }
                         let mut result: Vec<IpNet> = Vec::new();
