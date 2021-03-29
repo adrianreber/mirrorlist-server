@@ -121,7 +121,7 @@ checksum = "093d88961fd18c4ecacb8c80cd0b356463ba941ba11e0e01f9cf5271380b79dc"
 dependencies = [
  "cfg-if 1.0.0",
  "libc",
- "socket2",
+ "socket2 0.3.19",
  "winapi",
 ]
 
@@ -309,9 +309,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "0.14.4"
+version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8e946c2b1349055e0b72ae281b238baf1a3ea7307c7e9f9d64673bdd9c26ac7"
+checksum = "8bf09f61b52cfcf4c00de50df88ae423d6c02354e385a86341133b5338630ad1"
 dependencies = [
  "bytes 1.0.1",
  "futures-channel",
@@ -324,7 +324,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project",
- "socket2",
+ "socket2 0.4.0",
  "tokio",
  "tower-service",
  "tracing",
@@ -456,7 +456,7 @@ version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a33c1b55807fbed163481b5ba66db4b2fa6cde694a5027be10fb724206c5897"
 dependencies = [
- "socket2",
+ "socket2 0.3.19",
  "winapi",
 ]
 
@@ -482,7 +482,7 @@ dependencies = [
  "protobuf-codegen-pure",
  "rand",
  "regex",
- "socket2",
+ "socket2 0.3.19",
  "tempfile",
  "tokio",
  "tracing",
@@ -765,6 +765,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "socket2"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e3dfc207c526015c632472a77be09cf1b6e46866581aecae5cc38fb4235dea2"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "syn"
 version = "1.0.48"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -975,9 +985,9 @@ checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
 
 [[package]]
 name = "winapi"
-version = "0.3.8"
+version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8093091eeb260906a183e6ae1abdba2ef5ef2257a21801128899c3fc699229c6"
+checksum = "5c839a674fcd7a98952e593242ea400abe93992746761e38641405d28b00f419"
 dependencies = [
  "winapi-i686-pc-windows-gnu",
  "winapi-x86_64-pc-windows-gnu",
