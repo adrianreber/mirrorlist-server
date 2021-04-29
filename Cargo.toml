@@ -28,7 +28,7 @@ ipnetwork = "0.17.0"
 indicatif = "0.15.0"
 console = "0.14.1"
 tracing = "0.1.25"
-socket2 = "0.3.19"
+socket2 = "0.4.0"
 
 [dependencies.tokio]
 version = "1.4.0"
