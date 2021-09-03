@@ -49,8 +49,3 @@ Usage
 
 The mirrorlist-server requires multiple input files which all can be created
 using MirrorManager2 or generate-mirrorlist-cache.
-
-There is also a container which can be used to quickly start-up an instance
-of the Rust based mirrorlist-server::
-
-    $ podman run quay.io/adrianreber/mirrorlist-server:latest -h

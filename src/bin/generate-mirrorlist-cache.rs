@@ -820,9 +820,15 @@ fn get_mlc(
         ml.set_directory(d.1.clone());
         /* This only works as long as there are not UTF-8 characters in the path names. */
         let dirname = String::from(&d.1.clone());
-        let mut top_len = topdir_hash[&category_id] as usize;
-        /* One more to remove the leading slash of the subpath */
-        top_len += 1;
+        let top_len: usize = match topdir_hash[&category_id] as usize > dirname.len()
+            && dirname.as_bytes()[topdir_hash[&category_id] as usize] == b'/'
+        {
+            true => {
+                /* One more to remove the leading slash of the subpath */
+                (topdir_hash[&category_id] + 1) as usize
+            }
+            false => topdir_hash[&category_id] as usize,
+        };
         let subpath: String;
         if top_len > dirname.len() {
             subpath = String::new();

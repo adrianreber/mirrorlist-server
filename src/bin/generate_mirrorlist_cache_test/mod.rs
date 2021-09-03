@@ -18,4 +18,3 @@ fn get_element_test() {
     element = get_element(42, &e);
     assert_eq!(0, element.len());
 }
-
