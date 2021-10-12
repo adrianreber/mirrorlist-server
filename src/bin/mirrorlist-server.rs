@@ -419,9 +419,9 @@ fn do_mirrorlist(
     } else {
         if get_param(&query_params, "repo").contains("source") {
             if check_for_param(&query_params, "arch") {
-                &query_params.remove(&"arch");
+                query_params.remove(&"arch");
             }
-            &query_params.insert(&"arch", &"source");
+            query_params.insert(&"arch", &"source");
         }
         let repo_redirect_cache = &mirrorlist.get_RepositoryRedirectCache();
         let mut repo =
