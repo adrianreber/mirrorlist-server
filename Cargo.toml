@@ -27,7 +27,7 @@ dns-lookup = "1.0.8"
 ipnetwork = "0.18.0"
 indicatif = "0.16.2"
 console = "0.14.1"
-tracing = "0.1.26"
+tracing = "0.1.29"
 socket2 = "0.4.2"
 
 [dependencies.tokio]
