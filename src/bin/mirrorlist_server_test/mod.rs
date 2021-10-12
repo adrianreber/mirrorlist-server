@@ -1,5 +1,7 @@
 use super::*;
-use crate::lib::protos::mirrormanager::IntRepeatedIntMap;
+use crate::lib::protos::mirrormanager::{
+    FileDetailsCacheDirectoryType, FileDetailsCacheFilesType, IntRepeatedIntMap,
+};
 use hyper::body;
 use protobuf::RepeatedField;
 use tempfile::tempdir;
@@ -80,14 +82,17 @@ pub async fn read_response_body(res: Response<Body>) -> Result<String, hyper::Er
 fn do_mirrorlist_test() {
     let mut mirrorlist = MirrorList::new();
     let mut mlc: RepeatedField<MirrorListCacheType> = RepeatedField::new();
-    let mut ml = MirrorListCacheType::new();
-    ml.set_directory("directory/level/three".to_string());
+    let mut ml1 = MirrorListCacheType::new();
+    ml1.set_directory("directory/level/three".to_string());
+    let mut ml2 = MirrorListCacheType::new();
+    ml2.set_directory("directory/level/three/repodata".to_string());
 
     let mut global: Vec<i64> = Vec::new();
     global.push(1);
     global.push(42);
     global.push(100);
-    ml.set_Global(global);
+    ml1.set_Global(global.clone());
+    ml2.set_Global(global);
 
     let mut by_hostid: RepeatedField<IntRepeatedIntMap> = RepeatedField::new();
     let mut hcurl_id = IntRepeatedIntMap::new();
@@ -105,17 +110,19 @@ fn do_mirrorlist_test() {
     hcurl_id.set_value(vec![1001, 1002, 1003]);
     by_hostid.push(hcurl_id);
 
-    ml.set_ByHostId(by_hostid);
+    ml1.set_ByHostId(by_hostid.clone());
+    ml2.set_ByHostId(by_hostid);
 
     let mut by_country: RepeatedField<StringRepeatedIntMap> = RepeatedField::new();
     let mut bc = StringRepeatedIntMap::new();
     bc.set_key("SE".to_string());
     bc.set_value(vec![42]);
     by_country.push(bc);
-    ml.set_ByCountry(by_country);
+    ml1.set_ByCountry(by_country.clone());
+    ml2.set_ByCountry(by_country);
 
-    mlc.push(ml);
-    mirrorlist.set_MirrorListCache(mlc);
+    mlc.push(ml1);
+    mirrorlist.set_MirrorListCache(mlc.clone());
 
     let mut hbc: RepeatedField<IntIntMap> = RepeatedField::new();
     let mut hb = IntIntMap::new();
@@ -347,6 +354,137 @@ fn do_mirrorlist_test() {
             .block_on(read_response_body(response))
             .unwrap()
             .contains("# path = directory/level/three country = SE country = global \nhttp://hcurl421/test-421/\nhttp://hcurl"));
+
+    request = Request::new(Body::empty());
+    *request.uri_mut() = "/metalink?repo=repo-name&arch=arch-name&ip=89.160.20.113"
+        .parse()
+        .unwrap();
+    response = do_mirrorlist(
+        request,
+        &mirrorlist,
+        &remote,
+        &asn_cache,
+        &asn_cache,
+        &geoip_reader,
+        &cc,
+        &log_file,
+        2,
+    );
+    assert_eq!(response.status(), 404);
+    assert!(Runtime::new()
+        .unwrap()
+        .block_on(read_response_body(response))
+        .unwrap()
+        .contains("# repo = repo-name arch = arch-name error: invalid repo or arch"));
+
+    let mut repo = StringStringMap::new();
+
+    repo.set_key("repo-name+arch-name".to_string());
+    repo.set_value("directory/level/three".to_string());
+    let mut ratdn: RepeatedField<StringStringMap> = RepeatedField::new();
+    ratdn.push(repo);
+    mirrorlist.set_RepoArchToDirectoryName(ratdn);
+
+    request = Request::new(Body::empty());
+    *request.uri_mut() = "/metalink?repo=repo-name&arch=arch-name&ip=89.160.20.113"
+        .parse()
+        .unwrap();
+    response = do_mirrorlist(
+        request,
+        &mirrorlist,
+        &remote,
+        &asn_cache,
+        &asn_cache,
+        &geoip_reader,
+        &cc,
+        &log_file,
+        2,
+    );
+    assert_eq!(response.status(), 500);
+    assert!(Runtime::new()
+        .unwrap()
+        .block_on(read_response_body(response))
+        .unwrap()
+        .contains("mirrorlist cache index out of range, you broke it!"));
+
+    mlc.push(ml2);
+    mirrorlist.set_MirrorListCache(mlc);
+
+    request = Request::new(Body::empty());
+    *request.uri_mut() = "/metalink?repo=repo-name&arch=arch-name&ip=89.160.20.113"
+        .parse()
+        .unwrap();
+    response = do_mirrorlist(
+        request,
+        &mirrorlist,
+        &remote,
+        &asn_cache,
+        &asn_cache,
+        &geoip_reader,
+        &cc,
+        &log_file,
+        2,
+    );
+    assert_eq!(response.status(), 404);
+    assert!(Runtime::new()
+        .unwrap()
+        .block_on(read_response_body(response))
+        .unwrap()
+        .contains("repomd.xml not found or has not metalink"));
+
+    let mut fdcdc: RepeatedField<FileDetailsCacheDirectoryType> = RepeatedField::new();
+    let mut fdcd = FileDetailsCacheDirectoryType::new();
+    fdcd.set_directory("directory/level/three/repodata".to_string());
+    fdcdc.push(fdcd);
+
+    let f: &mut FileDetailsCacheDirectoryType = &mut fdcdc[0];
+    let fdcfc = f.mut_FileDetailsCacheFiles();
+    let mut fdcf = FileDetailsCacheFilesType::new();
+    fdcf.set_filename("repomd.xml".to_string());
+    fdcfc.push(fdcf);
+
+    let fdcf: &mut FileDetailsCacheFilesType = &mut fdcfc[0];
+    let fdc = fdcf.mut_FileDetails();
+    let mut file_detail_type = FileDetailsType::new();
+    file_detail_type.set_Size(3);
+    file_detail_type.set_TimeStamp(17);
+    file_detail_type.set_MD5("MD5555".to_string());
+    fdc.push(file_detail_type);
+
+    mirrorlist.set_FileDetailsCache(fdcdc);
+
+    request = Request::new(Body::empty());
+    *request.uri_mut() = "/metalink?repo=repo-name&arch=arch-name&ip=89.160.20.113"
+        .parse()
+        .unwrap();
+    response = do_mirrorlist(
+        request,
+        &mirrorlist,
+        &remote,
+        &asn_cache,
+        &asn_cache,
+        &geoip_reader,
+        &cc,
+        &log_file,
+        2,
+    );
+    println!("{:#?}", response);
+    assert_eq!(response.status(), 200);
+    let response_body = Runtime::new()
+        .unwrap()
+        .block_on(read_response_body(response))
+        .unwrap();
+    assert!(response_body
+        .clone()
+        .contains("<hash type=\"md5\">MD5555</hash>"));
+
+    assert!(response_body
+        .clone()
+        .contains("<mm0:timestamp>17</mm0:timestamp>"));
+
+    assert!(response_body.clone().contains("<size>3</size>"));
+
+    assert!(response_body.clone().contains("<file name=\"repomd.xml\">"));
 
     drop(file);
     drop(log_file);
