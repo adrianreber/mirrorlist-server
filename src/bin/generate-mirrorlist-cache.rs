@@ -265,7 +265,7 @@ fn get_host_category_dirs(c: &PgConnection) -> Vec<(i32, i32)> {
         .expect("Error loading host category dirs")
 }
 
-fn get_element(host: i32, element: &Vec<(i32, String)>) -> Vec<String> {
+fn get_element(host: i32, element: &[(i32, String)]) -> Vec<String> {
     let mut n: Vec<String> = Vec::new();
     for e in element {
         if e.0 == host {
@@ -275,7 +275,7 @@ fn get_element(host: i32, element: &Vec<(i32, String)>) -> Vec<String> {
     n
 }
 
-fn get_host(host: i32, hosts: &Vec<Host>) -> Host {
+fn get_host(host: i32, hosts: &[Host]) -> Host {
     for h in hosts {
         if h.0 == host {
             return h.clone();
@@ -346,7 +346,7 @@ fn is_host_private(h: Host) -> bool {
 fn parse_ip(input: String, host: String) -> Result<Vec<IpNet>, String> {
     /* This function is unnecessarily complicated as it has
      * to deal with the free form input from users. */
-    let ip_string = String::from(input.to_string().trim());
+    let ip_string = String::from(input.trim());
     let net = match IpNet::from_str(&ip_string) {
         Ok(net) => net,
         _ => {
@@ -357,7 +357,7 @@ fn parse_ip(input: String, host: String) -> Result<Vec<IpNet>, String> {
                      * an IP address with a netmask 1.2.3.4/255.255.255.248
                      * or a DNS name. If it can be split at '/' it is an IP
                      * with a netmask, else try to resolve it. */
-                    let split_ip: Vec<&str> = ip_string.split("/").collect();
+                    let split_ip: Vec<&str> = ip_string.split('/').collect();
                     if split_ip.len() != 2 {
                         /* Probably DNS name */
                         let ips = lookup_host(&ip_string);
@@ -392,9 +392,9 @@ fn parse_ip(input: String, host: String) -> Result<Vec<IpNet>, String> {
                         /* Parsing failed. Ignore it. */
                         return Err("Parse Error".to_string());
                     }
-                    let mut with_mask = String::from(ip_network.clone().unwrap().ip().to_string());
-                    with_mask.push_str("/");
-                    let netmask = String::from(ip_network.unwrap().prefix().to_string());
+                    let mut with_mask = ip_network.clone().unwrap().ip().to_string();
+                    with_mask.push('/');
+                    let netmask = ip_network.unwrap().prefix().to_string();
                     with_mask.push_str(&netmask);
                     let n = IpNet::from_str(&with_mask);
                     if n.is_err() {
@@ -417,7 +417,7 @@ fn parse_ip(input: String, host: String) -> Result<Vec<IpNet>, String> {
 }
 
 /* HostBandwidthCache */
-fn get_hbc(hosts: &Vec<Host>) -> RepeatedField<IntIntMap> {
+fn get_hbc(hosts: &[Host]) -> RepeatedField<IntIntMap> {
     let mut hbc: RepeatedField<IntIntMap> = RepeatedField::new();
 
     for h in hosts {
@@ -438,7 +438,7 @@ fn get_hbc(hosts: &Vec<Host>) -> RepeatedField<IntIntMap> {
 }
 
 /* HostMaxConnectionCache */
-fn get_hmcc(hosts: &Vec<Host>) -> RepeatedField<IntIntMap> {
+fn get_hmcc(hosts: &[Host]) -> RepeatedField<IntIntMap> {
     let mut hmcc: RepeatedField<IntIntMap> = RepeatedField::new();
 
     for h in hosts {
@@ -452,7 +452,7 @@ fn get_hmcc(hosts: &Vec<Host>) -> RepeatedField<IntIntMap> {
 }
 
 /* HostCountryCache */
-fn get_hcc(hosts: &Vec<Host>) -> RepeatedField<IntStringMap> {
+fn get_hcc(hosts: &[Host]) -> RepeatedField<IntStringMap> {
     let mut hcc: RepeatedField<IntStringMap> = RepeatedField::new();
 
     for h in hosts {
@@ -469,7 +469,7 @@ fn get_hcc(hosts: &Vec<Host>) -> RepeatedField<IntStringMap> {
 }
 
 /* HostAsnCache */
-fn get_hac(hosts: &Vec<Host>) -> RepeatedField<IntRepeatedIntMap> {
+fn get_hac(hosts: &[Host]) -> RepeatedField<IntRepeatedIntMap> {
     let mut hac: RepeatedField<IntRepeatedIntMap> = RepeatedField::new();
 
     for h in hosts {
@@ -496,7 +496,7 @@ fn get_hac(hosts: &Vec<Host>) -> RepeatedField<IntRepeatedIntMap> {
 }
 
 /* HostCountryAllowedCache */
-fn get_hcac(c: &PgConnection, hosts: &Vec<Host>) -> RepeatedField<IntRepeatedStringMap> {
+fn get_hcac(c: &PgConnection, hosts: &[Host]) -> RepeatedField<IntRepeatedStringMap> {
     let mut hcac: RepeatedField<IntRepeatedStringMap> = RepeatedField::new();
 
     let hcac_raw = get_host_country_allowed(c);
@@ -506,7 +506,7 @@ fn get_hcac(c: &PgConnection, hosts: &Vec<Host>) -> RepeatedField<IntRepeatedStr
             continue;
         }
         let element = get_element(h.0, &hcac_raw);
-        if element.len() < 1 {
+        if element.is_empty() {
             continue;
         }
 
@@ -531,7 +531,7 @@ fn get_hcac(c: &PgConnection, hosts: &Vec<Host>) -> RepeatedField<IntRepeatedStr
 }
 
 /* HCUrlCache */
-fn get_hcurlc(host_category_urls: &Vec<(i32, i32, String)>) -> RepeatedField<IntStringMap> {
+fn get_hcurlc(host_category_urls: &[(i32, i32, String)]) -> RepeatedField<IntStringMap> {
     let mut hcurl: RepeatedField<IntStringMap> = RepeatedField::new();
 
     for hcu in host_category_urls {
@@ -545,9 +545,9 @@ fn get_hcurlc(host_category_urls: &Vec<(i32, i32, String)>) -> RepeatedField<Int
 }
 
 /* HostNetBlockCache */
-fn get_hnbc(c: &PgConnection, hosts: &Vec<Host>) -> RepeatedField<StringRepeatedIntMap> {
+fn get_hnbc(c: &PgConnection, hosts: &[Host]) -> RepeatedField<StringRepeatedIntMap> {
     let mut hnbc: RepeatedField<StringRepeatedIntMap> = RepeatedField::new();
-    let netblocks_and_hosts = get_netblocks(&c);
+    let netblocks_and_hosts = get_netblocks(c);
     let debug = DEBUG.load(Ordering::SeqCst);
 
     CALL_COUNT.fetch_add(1, Ordering::SeqCst);
@@ -598,8 +598,8 @@ fn get_hnbc(c: &PgConnection, hosts: &Vec<Host>) -> RepeatedField<StringRepeated
 /* RepoArchToDirectoryName */
 fn get_ratdn(
     c: &PgConnection,
-    directories: &Vec<Directory>,
-    repositories: &Vec<Repository>,
+    directories: &[Directory],
+    repositories: &[Repository],
 ) -> RepeatedField<StringStringMap> {
     let mut ratdn: RepeatedField<StringStringMap> = RepeatedField::new();
 
@@ -611,7 +611,7 @@ fn get_ratdn(
             if r.0.is_none() || r.3.is_none() || r.4.is_none() {
                 continue;
             }
-            if r.0.as_ref().unwrap().len() == 0 {
+            if r.0.as_ref().unwrap().is_empty() {
                 continue;
             }
             if r.4.unwrap() == d.0 {
@@ -619,14 +619,14 @@ fn get_ratdn(
             }
         }
 
-        if found_repos.len() < 1 {
+        if found_repos.is_empty() {
             continue;
         }
 
         for r in found_repos {
             let mut key = String::new();
             key.push_str(r.0.as_ref().unwrap());
-            key.push_str("+");
+            key.push('+');
             let mut a_id: i32 = -1;
             let mut i: i32 = -1;
             for a in &arches {
@@ -655,9 +655,9 @@ fn get_ratdn(
 /* MirrorListCache */
 fn get_mlc(
     c: &PgConnection,
-    hosts: &Vec<Host>,
-    directories: &Vec<Directory>,
-    host_category_urls: &Vec<(i32, i32, String)>,
+    hosts: &[Host],
+    directories: &[Directory],
+    host_category_urls: &[(i32, i32, String)],
 ) -> (
     RepeatedField<MirrorListCacheType>,
     RepeatedField<FileDetailsCacheDirectoryType>,
@@ -737,7 +737,7 @@ fn get_mlc(
             }
         };
         val.push((id.into(), hc.0.into()));
-        host_cat_id_hash.insert(id.into(), hc.3);
+        host_cat_id_hash.insert(id, hc.3);
     }
 
     let debug = DEBUG.load(Ordering::SeqCst);
@@ -768,12 +768,12 @@ fn get_mlc(
                 }
                 let f: &mut FileDetailsCacheDirectoryType = &mut fdcdc[i as usize];
                 let fdcfc = f.mut_FileDetailsCacheFiles();
-                i = find_in_file_details_cache_files_cache(&fdcfc, &fd.1);
+                i = find_in_file_details_cache_files_cache(fdcfc, &fd.1);
                 if i == -1 {
                     let mut tmp = FileDetailsCacheFilesType::new();
                     tmp.set_filename(fd.1.clone());
                     fdcfc.push(tmp.clone());
-                    i = find_in_file_details_cache_files_cache(&fdcfc, &fd.1);
+                    i = find_in_file_details_cache_files_cache(fdcfc, &fd.1);
                 }
                 let fdcf: &mut FileDetailsCacheFilesType = &mut fdcfc[i as usize];
                 let fdc = fdcf.mut_FileDetails();
@@ -788,16 +788,16 @@ fn get_mlc(
                 } else {
                     file_detail_type.set_Size(fd.3.unwrap().try_into().unwrap());
                 }
-                if !fd.4.is_none() {
+                if fd.4.is_some() {
                     file_detail_type.set_SHA1(fd.4.as_ref().unwrap().clone());
                 }
-                if !fd.5.is_none() {
+                if fd.5.is_some() {
                     file_detail_type.set_MD5(fd.5.as_ref().unwrap().clone());
                 }
-                if !fd.6.is_none() {
+                if fd.6.is_some() {
                     file_detail_type.set_SHA256(fd.6.as_ref().unwrap().clone());
                 }
-                if !fd.7.is_none() {
+                if fd.7.is_some() {
                     file_detail_type.set_SHA512(fd.7.as_ref().unwrap().clone());
                 }
                 fdc.push(file_detail_type);
@@ -878,7 +878,7 @@ fn get_mlc(
                 continue;
             }
 
-            if !host.5.is_none() && host.12 {
+            if host.5.is_some() && host.12 {
                 let country: String = host.clone().5.unwrap().to_string().to_uppercase();
                 let i = find_in_string_repeated_int_map(&by_internet2, &country);
                 if i != -1 {
@@ -938,7 +938,7 @@ fn get_rrc(c: &PgConnection) -> RepeatedField<StringStringMap> {
 
     for rr in rrc_raw {
         let mut r = StringStringMap::new();
-        if !rr.1.is_none() {
+        if rr.1.is_some() {
             r.set_key(rr.0.clone());
             r.set_value(rr.1.unwrap().clone());
             rrc.push(r);
@@ -981,12 +981,12 @@ fn get_ccrc(c: &PgConnection) -> RepeatedField<StringStringMap> {
 }
 
 /* DisabledRepositoryCache */
-fn get_drc(repositories: &Vec<Repository>) -> RepeatedField<StringBoolMap> {
+fn get_drc(repositories: &[Repository]) -> RepeatedField<StringBoolMap> {
     let mut drc: RepeatedField<StringBoolMap> = RepeatedField::new();
 
     for r in repositories {
         let mut dr = StringBoolMap::new();
-        if !r.0.is_none() && r.5 {
+        if r.0.is_some() && r.5 {
             dr.set_key(r.0.as_ref().unwrap().clone());
             dr.set_value(r.5);
             drc.push(dr);
@@ -1004,7 +1004,7 @@ fn print_usage(program: &str, opts: Options) {
 fn main() {
     let mut config_file = String::from("/etc/mirrormanager/generate-mirrorlist-cache.cfg");
     let mut cache_file = String::from("/var/lib/mirrormanager/mirrorlist_cache.proto");
-    let args: Vec<String> = env::args().map(|x| x.to_string()).collect();
+    let args: Vec<String> = env::args().collect();
     let program = args[0].clone();
 
     let mut opts = Options::new();
