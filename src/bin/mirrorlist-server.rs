@@ -66,7 +66,7 @@ fn get_param(params: &HashMap<&str, &str>, find: &str) -> String {
     let mut result = String::new();
     for param in params {
         if param.0 == &find {
-            result.push_str(&param.1);
+            result.push_str(param.1);
         }
     }
     result
@@ -86,7 +86,7 @@ fn find_in_netblock_country_cache(nbcc: &[StringStringMap], client_ip: &IpAddr) 
     // Fedora's database this only contains one entry. No need
     // to implement it via tree, yet.. In
     for e in nbcc {
-        let net: IpNet = match IpNet::from_str(&e.get_key()) {
+        let net: IpNet = match IpNet::from_str(e.get_key()) {
             Ok(net) => net,
             _ => return "".to_string(),
         };
@@ -130,7 +130,7 @@ fn trim_by_client_country(
 ) -> Vec<i64> {
     for host in hosts.clone() {
         // Check if this host is part of host_country_allowed_cache
-        let index = find_in_int_repeated_string_map(&hcac, host);
+        let index = find_in_int_repeated_string_map(hcac, host);
         if index == -1 {
             // Host is not part of host_country_allowed_cache
             continue;
@@ -143,15 +143,13 @@ fn trim_by_client_country(
                 found = true;
             }
         }
-        if found == false {
+        if !found {
             // Looks like this host should be removed from the list of valid hosts
-            let mut count = 0;
-            for inner_loop_host in hosts.clone() {
-                if inner_loop_host == host {
+            for (count, inner_loop_host) in hosts.clone().iter().enumerate() {
+                if inner_loop_host == &host {
                     hosts.remove(count);
                     break;
                 }
-                count += 1;
             }
         }
     }
@@ -161,7 +159,7 @@ fn trim_by_client_country(
 fn do_global(hcac: &[IntRepeatedStringMap], global: &mut Vec<i64>, country: String) -> String {
     let header = String::from("country = global ");
     let hosts = trim_by_client_country(hcac, global, country);
-    *global = hosts.clone();
+    *global = hosts;
     header
 }
 
@@ -172,7 +170,7 @@ fn do_countrylist(
 ) -> String {
     let mut header = String::new();
     // Check if the country exists at all in the by_country cache
-    let i = find_in_string_repeated_int_map(by_country, &country.to_string().to_uppercase());
+    let i = find_in_string_repeated_int_map(by_country, &country.to_uppercase());
     if i != -1 {
         for host in by_country[i as usize].get_value() {
             // Add all hostids to the result
@@ -202,8 +200,8 @@ fn get_same_continent_hosts(
     // Get the continent and get all corresponding countries
     for c in cc.keys() {
         if cc[c] == continent && c != &country.to_uppercase() {
-            let ret = do_countrylist(&by_country, &mut hosts, c.to_string());
-            if ret != "" {
+            let ret = do_countrylist(by_country, &mut hosts, c.to_string());
+            if !ret.is_empty() {
                 header.push_str(&ret);
             }
         }
@@ -212,12 +210,12 @@ fn get_same_continent_hosts(
 }
 
 fn weigthed_shuffle(hosts: &mut Vec<i64>, hbc: &[IntIntMap], results: &mut Vec<i64>) {
-    if hosts.len() == 0 {
+    if hosts.is_empty() {
         return;
     }
     let mut weights: Vec<i64> = Vec::new();
     for e in hosts.clone() {
-        weights.push(find_in_int_int_map(&hbc, e));
+        weights.push(find_in_int_int_map(hbc, e));
     }
     let mut rng = &mut rand::thread_rng();
     let mut dist = WeightedIndex::new(&weights).unwrap();
@@ -227,14 +225,14 @@ fn weigthed_shuffle(hosts: &mut Vec<i64>, hbc: &[IntIntMap], results: &mut Vec<i
         results.push(host);
         hosts.remove(index);
         weights.remove(index);
-        if weights.len() != 0 {
+        if !weights.is_empty() {
             dist = WeightedIndex::new(&weights).unwrap();
         }
     }
 }
 
 fn append_path(
-    all_hosts: &Vec<i64>,
+    all_hosts: &[i64],
     cache: &MirrorListCacheType,
     hcurl_cache: &[IntStringMap],
     file: String,
@@ -251,17 +249,17 @@ fn append_path(
         }
 
         for hcurl_id in by_host_id[i as usize].get_value() {
-            let mut s = String::from(&find_in_int_string_map(&hcurl_cache, *hcurl_id));
-            if subpath != "" {
-                s.push_str("/");
+            let mut s = String::from(&find_in_int_string_map(hcurl_cache, *hcurl_id));
+            if !subpath.is_empty() {
+                s.push('/');
                 s.push_str(&subpath);
             }
-            if file == "" && path_is_dir {
-                s.push_str("/");
+            if file.is_empty() && path_is_dir {
+                s.push('/');
             }
-            if file != "" {
-                if !s.ends_with("/") {
-                    s.push_str("/");
+            if !file.is_empty() {
+                if !s.ends_with('/') {
+                    s.push('/');
                 }
                 s.push_str(&file);
             }
@@ -274,7 +272,7 @@ fn append_path(
 
 fn trim_to_preferred_protocols(
     hosts_and_urls: &mut Vec<(i64, Vec<String>)>,
-    try_protocols: &Vec<&str>,
+    try_protocols: &[&str],
     max: usize,
 ) {
     let mut result: Vec<(i64, Vec<String>)> = Vec::new();
@@ -297,11 +295,11 @@ fn trim_to_preferred_protocols(
                 break;
             }
         }
-        if url.len() > 0 {
+        if !url.is_empty() {
             result.push((host, url));
         }
     }
-    if result.len() > 0 {
+    if !result.is_empty() {
         *hosts_and_urls = result;
     }
 }
@@ -322,23 +320,24 @@ fn http_response(metalink: bool, message: String, code: hyper::StatusCode) -> Re
     response
 }
 
-fn do_mirrorlist(
-    req: Request<Body>,
-    mirrorlist: &MirrorList,
-    remote: &IpAddr,
-    asn_cache: &(
+struct DoMirrorlist<'a> {
+    mirrorlist: &'a MirrorList,
+    remote: &'a IpAddr,
+    asn_cache: &'a (
         IpLookupTable<Ipv4Addr, String>,
         IpLookupTable<Ipv6Addr, String>,
     ),
-    i2_cache: &(
+    i2_cache: &'a (
         IpLookupTable<Ipv4Addr, String>,
         IpLookupTable<Ipv6Addr, String>,
     ),
-    geoip2: &Reader<std::vec::Vec<u8>>,
-    cc: &HashMap<String, String>,
-    mut log_file: &File,
+    geoip: &'a Reader<std::vec::Vec<u8>>,
+    cc: &'a HashMap<String, String>,
+    log_file: &'a File,
     minimum: usize,
-) -> Response<Body> {
+}
+
+fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
     let mut response = Response::new(Body::empty());
 
     let metalink = req.uri().path().ends_with("/metalink");
@@ -352,18 +351,18 @@ fn do_mirrorlist(
 
     // Split query string from url
     let params: Vec<&str> = match req.uri().query() {
-        Some(q) => q.split("&").collect(),
+        Some(q) => q.split('&').collect(),
         _ => Vec::new(),
     };
 
     // Fill query_params hashmap
     let mut query_params: HashMap<&str, &str> = HashMap::new();
     for param in params {
-        let elements: Vec<&str> = param.split("=").collect();
+        let elements: Vec<&str> = param.split('=').collect();
         if elements.len() == 1 {
-            query_params.insert(&elements[0], &"");
+            query_params.insert(elements[0], "");
         } else {
-            query_params.insert(&elements[0], &elements[1]);
+            query_params.insert(elements[0], elements[1]);
         }
     }
 
@@ -383,25 +382,25 @@ fn do_mirrorlist(
     let mut path_is_dir = false;
     let mut header = String::new();
     let cache: &MirrorListCacheType;
-    let mirrorlist_caches = &mirrorlist.get_MirrorListCache();
+    let mirrorlist_caches = &p.mirrorlist.get_MirrorListCache();
 
     if check_for_param(&query_params, "path") {
         let mut path = get_param(&query_params, "path");
         path = path.trim_matches('/').to_string();
         let re = Regex::new(r"/+").unwrap();
         path = re.replace_all(&path, "/").to_string();
-        let index = find_in_mirrorlist_cache(&mirrorlist_caches, &path);
+        let index = find_in_mirrorlist_cache(mirrorlist_caches, &path);
 
         header.push_str("# path = ");
         header.push_str(&path);
-        header.push_str(" ");
+        header.push(' ');
 
         if index == -1 {
             // path was a file
-            sdir = path.split("/").collect();
+            sdir = path.split('/').collect();
             file.push_str(&sdir[sdir.len() - 1].to_string());
-            dir.push_str(&path.trim_end_matches(&file).trim_end_matches('/'));
-            let index = find_in_mirrorlist_cache(&mirrorlist_caches, &dir);
+            dir.push_str(path.trim_end_matches(&file).trim_end_matches('/'));
+            let index = find_in_mirrorlist_cache(mirrorlist_caches, &dir);
             if index == -1 {
                 return http_response(
                     metalink,
@@ -421,26 +420,26 @@ fn do_mirrorlist(
             if check_for_param(&query_params, "arch") {
                 query_params.remove(&"arch");
             }
-            query_params.insert(&"arch", &"source");
+            query_params.insert("arch", "source");
         }
-        let repo_redirect_cache = &mirrorlist.get_RepositoryRedirectCache();
+        let repo_redirect_cache = &p.mirrorlist.get_RepositoryRedirectCache();
         let mut repo =
-            find_in_string_string_map(&repo_redirect_cache, &get_param(&query_params, "repo"));
-        if repo == "" {
+            find_in_string_string_map(repo_redirect_cache, &get_param(&query_params, "repo"));
+        if repo.is_empty() {
             repo = get_param(&query_params, "repo");
         }
         let arch = get_param(&query_params, "arch");
         header.push_str(&format!("# repo = {} arch = {} ", repo, arch));
-        if find_in_string_bool_map(&mirrorlist.get_DisabledRepositoryCache(), &repo) {
+        if find_in_string_bool_map(p.mirrorlist.get_DisabledRepositoryCache(), &repo) {
             return http_response(metalink, "repo disabled".to_string(), StatusCode::OK);
         }
         let key = find_in_string_string_map(
-            &mirrorlist.get_RepoArchToDirectoryName(),
+            p.mirrorlist.get_RepoArchToDirectoryName(),
             &format!("{}+{}", repo, arch),
         );
-        if key == "" {
+        if key.is_empty() {
             let mut repos: Vec<String> = Vec::new();
-            for e in mirrorlist.get_RepoArchToDirectoryName() {
+            for e in p.mirrorlist.get_RepoArchToDirectoryName() {
                 repos.push(e.get_key().to_string());
             }
             repos.sort();
@@ -448,7 +447,7 @@ fn do_mirrorlist(
             repo_information.push_str("error: invalid repo or arch\n");
             repo_information.push_str("# following repositories are available:\n");
             for r in repos {
-                let elements: Vec<&str> = r.split("+").collect();
+                let elements: Vec<&str> = r.split('+').collect();
                 if elements.len() == 2 {
                     repo_information
                         .push_str(&format!("# repo={}&arch={}\n", elements[0], elements[1]));
@@ -465,7 +464,7 @@ fn do_mirrorlist(
         } else {
             path_is_dir = true;
         }
-        let index = find_in_mirrorlist_cache(&mirrorlist_caches, &dir);
+        let index = find_in_mirrorlist_cache(mirrorlist_caches, &dir);
         if index == -1 {
             *response.body_mut() = Body::from("mirrorlist cache index out of range, you broke it!");
             *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
@@ -475,11 +474,16 @@ fn do_mirrorlist(
     }
 
     let mut ip_string = get_param(&query_params, "ip");
-    if req.headers().contains_key("x-forwarded-for") && ip_string == "" {
+    if req.headers().contains_key("x-forwarded-for") && ip_string.is_empty() {
         ip_string = String::from(req.headers()["x-forwarded-for"].to_str().unwrap());
-        ip_string = String::from(ip_string.rsplit(", ").next().unwrap_or(&ip_string.as_str()));
-    } else if ip_string == "" {
-        ip_string.push_str(&remote.to_string());
+        ip_string = String::from(
+            ip_string
+                .rsplit(", ")
+                .next()
+                .unwrap_or_else(|| ip_string.as_str()),
+        );
+    } else if ip_string.is_empty() {
+        ip_string.push_str(&p.remote.to_string());
     }
 
     // Make sure that we got a valid IP address
@@ -504,10 +508,10 @@ fn do_mirrorlist(
 
     let country = get_param(&query_params, "country");
     let mut requested_countries: Vec<&str> = Vec::new();
-    if country != "" {
-        requested_countries = country.split(",").collect();
-        if requested_countries.len() != 0 {
-            requested_countries.sort();
+    if !country.is_empty() {
+        requested_countries = country.split(',').collect();
+        if !requested_countries.is_empty() {
+            requested_countries.sort_unstable();
             requested_countries.dedup();
         }
     }
@@ -516,11 +520,11 @@ fn do_mirrorlist(
     let mut mirrors_found = 0;
     let mut netblock_results: Vec<(String, i64)> = Vec::new();
     let mut asn_results: Vec<i64> = Vec::new();
-    if requested_countries.len() == 0
+    if requested_countries.is_empty()
         && (!check_for_param(&query_params, "netblock")
             || get_param(&query_params, "netblock") == "1")
     {
-        let hnbc = &mirrorlist.get_HostNetblockCache();
+        let hnbc = &p.mirrorlist.get_HostNetblockCache();
         for hnb in *hnbc {
             let net: IpNet = match IpNet::from_str(hnb.get_key()) {
                 Ok(net) => net,
@@ -548,7 +552,7 @@ fn do_mirrorlist(
             }
         }
 
-        if netblock_results.len() > 0 {
+        if !netblock_results.is_empty() {
             header.push_str("Using preferred netblock ");
             found_via = String::from("netblocks");
         }
@@ -559,9 +563,9 @@ fn do_mirrorlist(
         // Let's check ASN information for matches
 
         // First find the ASN from the global_netblocks file
-        let asn = find_in_ip_tree(&asn_cache, &client_ip);
-        if asn.1 != "" {
-            let host_asn_cache = &mirrorlist.get_HostAsnCache();
+        let asn = find_in_ip_tree(p.asn_cache, &client_ip);
+        if !asn.1.is_empty() {
+            let host_asn_cache = &p.mirrorlist.get_HostAsnCache();
             let asn_number = match asn.1.parse::<i64>() {
                 Ok(x) => x,
                 _ => -1,
@@ -573,10 +577,10 @@ fn do_mirrorlist(
                 }
             }
         }
-        if asn_results.len() != 0 {
+        if !asn_results.is_empty() {
             header.push_str(&format!("Using ASN {} ", asn.1));
             mirrors_found += asn_results.len();
-            if found_via == "" {
+            if found_via.is_empty() {
                 found_via = String::from("asn");
             }
         }
@@ -586,12 +590,12 @@ fn do_mirrorlist(
 
     // First check if we assigned this IP to another country
     let mut client_country: String =
-        find_in_netblock_country_cache(&mirrorlist.get_NetblockCountryCache(), &client_ip);
-    if client_country == "" {
+        find_in_netblock_country_cache(p.mirrorlist.get_NetblockCountryCache(), &client_ip);
+    if client_country.is_empty() {
         // Do a GeoIP 2 lookup. In the Python implementation
         // this was more complicated as it was doing IPv6, Teredo
         // and IPv4 separately. Not necessary with GeoIP2.
-        client_country = match geoip2.lookup::<geoip2::Country>(client_ip) {
+        client_country = match p.geoip.lookup::<geoip2::Country>(client_ip) {
             Ok(c) => match c.country {
                 Some(co) => match co.iso_code {
                     Some(iso) => iso.to_string(),
@@ -613,28 +617,28 @@ fn do_mirrorlist(
             get_param(&query_params, "repo"),
             get_param(&query_params, "arch")
         );
-        log_file.write_all(log_msg.as_bytes()).unwrap();
-        log_file.flush().unwrap();
+        p.log_file.write_all(log_msg.as_bytes()).unwrap();
+        p.log_file.flush().unwrap();
     }
 
     let mut i2_results: Vec<i64> = Vec::new();
     // Check if this is a Internet2 client
-    let i2 = find_in_ip_tree(&i2_cache, &client_ip);
-    if i2.1 != "" {
+    let i2 = find_in_ip_tree(p.i2_cache, &client_ip);
+    if !i2.1.is_empty() {
         let by_country_internet2 = &cache.get_ByCountryInternet2();
         let i = find_in_string_repeated_int_map(by_country_internet2, &client_country);
         if i != -1 {
             let hosts = trim_by_client_country(
-                &mirrorlist.get_HostCountryAllowedCache(),
+                p.mirrorlist.get_HostCountryAllowedCache(),
                 &mut Vec::from(by_country_internet2[i as usize].get_value()),
                 client_country.to_string(),
             );
 
-            if hosts.len() > 0 {
-                i2_results = hosts.clone();
+            if !hosts.is_empty() {
+                i2_results = hosts;
                 mirrors_found += i2_results.len();
                 header.push_str("Using Internet2 ");
-                if found_via == "" {
+                if found_via.is_empty() {
                     found_via = String::from("I2");
                 }
             }
@@ -650,54 +654,53 @@ fn do_mirrorlist(
     // user requested only mirrors for a certain country it will always
     // include the mirrors from the netblock/ASN/Internet2.
     let mut only_country = false;
-    if requested_countries.len() > 0 {
+    if !requested_countries.is_empty() {
         for country in &requested_countries {
-            if &country.to_uppercase() == &"global".to_uppercase() {
+            if country.to_uppercase() == "global".to_uppercase() {
                 country_results.append(&mut cache.get_Global().to_vec());
                 let ret = do_global(
-                    &mirrorlist.get_HostCountryAllowedCache(),
+                    p.mirrorlist.get_HostCountryAllowedCache(),
                     &mut country_results,
                     client_country.to_string(),
                 );
                 header.push_str(&ret);
             }
             let ret = do_countrylist(
-                &cache.get_ByCountry(),
+                cache.get_ByCountry(),
                 &mut country_results,
                 country.to_string(),
             );
-            if ret != "" {
+            if !ret.is_empty() {
                 header.push_str(&ret);
             }
         }
-        if country_results.len() == 0 {
+        if country_results.is_empty() {
             // No mirror in that country found, let's use all countries from the continent
             for country in requested_countries {
                 let ret = get_same_continent_hosts(
-                    &cache.get_ByCountry(),
-                    &cc,
+                    cache.get_ByCountry(),
+                    p.cc,
                     country.to_string(),
                     &mut continent_results,
                 );
-                if ret == "" {
+                if ret.is_empty() {
                     continue;
-                } else {
-                    header.push_str(&ret);
                 }
+                header.push_str(&ret);
             }
         }
-        if country_results.len() > 0 || continent_results.len() > 0 {
-            let hcac = &mirrorlist.get_HostCountryAllowedCache();
+        if !country_results.is_empty() || !continent_results.is_empty() {
+            let hcac = &p.mirrorlist.get_HostCountryAllowedCache();
             country_results =
-                trim_by_client_country(&hcac, &mut country_results, client_country.to_string());
+                trim_by_client_country(hcac, &mut country_results, client_country.to_string());
             continent_results =
-                trim_by_client_country(&hcac, &mut continent_results, client_country.to_string());
+                trim_by_client_country(hcac, &mut continent_results, client_country.to_string());
             mirrors_found += country_results.len() + continent_results.len();
             // If there has been a mirror based on the country specified with country= and/or
             // the corresponding continent, do not any further mirrors to the list.
             // The user has explicitly selected a limited list of mirrors.
             only_country = true;
-            if found_via == "" {
+            if found_via.is_empty() {
                 found_via = String::from("country");
             }
         }
@@ -706,36 +709,36 @@ fn do_mirrorlist(
     info!("mirrors_found after country {:#?}", mirrors_found);
 
     let mut geoip_results: Vec<i64> = Vec::new();
-    if only_country == false {
+    if !only_country {
         // Use GeoIP location do get a country list
         let ret = do_countrylist(
-            &cache.get_ByCountry(),
+            cache.get_ByCountry(),
             &mut geoip_results,
             client_country.to_string(),
         );
-        if ret != "" {
+        if !ret.is_empty() {
             header.push_str(&ret);
         }
-        if geoip_results.len() > 0 {
+        if !geoip_results.is_empty() {
             mirrors_found += geoip_results.len();
-            if found_via == "" {
+            if found_via.is_empty() {
                 found_via = String::from("geoip");
             }
         }
     }
     info!("mirrors_found after geoip country {:#?}", mirrors_found);
-    if only_country == false {
+    if !only_country {
         // Use GeoIP location do get a country on continent list
         let ret = get_same_continent_hosts(
-            &cache.get_ByCountry(),
-            &cc,
+            cache.get_ByCountry(),
+            p.cc,
             client_country.to_string(),
             &mut continent_results,
         );
-        if ret != "" {
+        if !ret.is_empty() {
             header.push_str(&ret);
             mirrors_found += continent_results.len();
-            if found_via == "" {
+            if found_via.is_empty() {
                 found_via = String::from("continent");
             }
         }
@@ -748,7 +751,7 @@ fn do_mirrorlist(
          * mirrors actually carry the content we are looking for. */
         let mut actual_hosts: Vec<i64> = Vec::new();
         for e in &netblock_results {
-            actual_hosts.push(e.1.clone());
+            actual_hosts.push(e.1);
         }
 
         actual_hosts.append(&mut asn_results.clone());
@@ -761,17 +764,17 @@ fn do_mirrorlist(
 
         let mut hosts_and_urls = append_path(
             &actual_hosts,
-            &cache,
-            &mirrorlist.get_HCUrlCache(),
+            cache,
+            p.mirrorlist.get_HCUrlCache(),
             file.clone(),
             path_is_dir,
         );
         if check_for_param(&query_params, "protocol") {
             let mut try_protocols: Vec<&str>;
             let protocols = get_param(&query_params, "protocol");
-            try_protocols = protocols.split(",").collect();
-            if try_protocols.len() != 0 {
-                try_protocols.sort();
+            try_protocols = protocols.split(',').collect();
+            if !try_protocols.is_empty() {
+                try_protocols.sort_unstable();
                 try_protocols.dedup();
             }
             trim_to_preferred_protocols(&mut hosts_and_urls, &try_protocols, try_protocols.len());
@@ -784,16 +787,16 @@ fn do_mirrorlist(
     }
 
     let mut global_results: Vec<i64> = Vec::new();
-    if mirrors_found < minimum && only_country == false {
+    if mirrors_found < p.minimum && !only_country {
         // Use mirrors from everywhere
         global_results = cache.get_Global().to_vec();
         let ret = do_global(
-            &mirrorlist.get_HostCountryAllowedCache(),
+            p.mirrorlist.get_HostCountryAllowedCache(),
             &mut global_results,
             client_country,
         );
         header.push_str(&ret);
-        if found_via == "" || mirrors_found == 0 {
+        if found_via.is_empty() || mirrors_found == 0 {
             found_via = String::from("global");
         }
         mirrors_found += global_results.len();
@@ -822,19 +825,19 @@ fn do_mirrorlist(
     all_hosts.append(&mut i2_results);
 
     {
-        let hbc = &mirrorlist.get_HostBandwidthCache();
+        let hbc = &p.mirrorlist.get_HostBandwidthCache();
         // Weighted shuffle by bandwidth
-        weigthed_shuffle(&mut country_results, &hbc, &mut all_hosts);
-        weigthed_shuffle(&mut geoip_results, &hbc, &mut all_hosts);
-        weigthed_shuffle(&mut continent_results, &hbc, &mut all_hosts);
-        weigthed_shuffle(&mut global_results, &hbc, &mut all_hosts);
+        weigthed_shuffle(&mut country_results, hbc, &mut all_hosts);
+        weigthed_shuffle(&mut geoip_results, hbc, &mut all_hosts);
+        weigthed_shuffle(&mut continent_results, hbc, &mut all_hosts);
+        weigthed_shuffle(&mut global_results, hbc, &mut all_hosts);
     }
     let all_hosts: Vec<_> = all_hosts.into_iter().unique().collect();
 
     let mut hosts_and_urls = append_path(
         &all_hosts,
-        &cache,
-        &mirrorlist.get_HCUrlCache(),
+        cache,
+        p.mirrorlist.get_HCUrlCache(),
         file.clone(),
         path_is_dir,
     );
@@ -843,9 +846,9 @@ fn do_mirrorlist(
     if check_for_param(&query_params, "protocol") {
         let mut try_protocols: Vec<&str>;
         let protocols = get_param(&query_params, "protocol");
-        try_protocols = protocols.split(",").collect();
-        if try_protocols.len() != 0 {
-            try_protocols.sort();
+        try_protocols = protocols.split(',').collect();
+        if !try_protocols.is_empty() {
+            try_protocols.sort_unstable();
             try_protocols.dedup();
         }
         trim_to_preferred_protocols(&mut hosts_and_urls, &try_protocols, try_protocols.len());
@@ -857,12 +860,12 @@ fn do_mirrorlist(
     if check_for_param(&query_params, "time") {
         header.push_str(&format!(
             "\n# database creation time: {}",
-            &mirrorlist.get_Time()
+            &p.mirrorlist.get_Time()
         ));
     }
 
     if metalink {
-        let (code, doc) = do_metalink(&cache, &mirrorlist, dir, file, &hosts_and_urls);
+        let (code, doc) = do_metalink(cache, p.mirrorlist, dir, file, &hosts_and_urls);
         *response.status_mut() = code;
         *response.body_mut() = Body::from(doc);
         response.headers_mut().insert(
@@ -871,15 +874,15 @@ fn do_mirrorlist(
         );
     } else {
         if check_for_param(&query_params, "redirect") {
-            trim_to_preferred_protocols(&mut hosts_and_urls, &vec!["https", "http"], 1);
+            trim_to_preferred_protocols(&mut hosts_and_urls, &["https", "http"], 1);
             protocols_trimmed = true;
         }
         if !protocols_trimmed {
-            trim_to_preferred_protocols(&mut hosts_and_urls, &vec!["https", "http", "ftp"], 1);
+            trim_to_preferred_protocols(&mut hosts_and_urls, &["https", "http", "ftp"], 1);
         }
         if check_for_param(&query_params, "redirect") {
             let mut redirect = String::new();
-            if hosts_and_urls.len() > 0 {
+            if !hosts_and_urls.is_empty() {
                 for (_, urls) in hosts_and_urls {
                     for u in urls {
                         if u.starts_with("http") {
@@ -887,13 +890,13 @@ fn do_mirrorlist(
                             break;
                         }
                     }
-                    if redirect != "" {
+                    if !redirect.is_empty() {
                         break;
                     }
                 }
             }
 
-            if redirect == "" {
+            if redirect.is_empty() {
                 *response.status_mut() = StatusCode::NOT_FOUND;
             } else {
                 *response.status_mut() = StatusCode::FOUND;
@@ -902,12 +905,12 @@ fn do_mirrorlist(
                     .insert(LOCATION, HeaderValue::from_str(&redirect).unwrap());
             }
         } else {
-            let mut answer = String::from(header);
-            answer.push_str("\n");
+            let mut answer = header;
+            answer.push('\n');
             for (_, urls) in hosts_and_urls {
                 for u in urls {
                     answer.push_str(&u);
-                    answer.push_str("\n");
+                    answer.push('\n');
                 }
             }
             *response.body_mut() = Body::from(answer);
@@ -967,11 +970,11 @@ fn do_metalink(
     mirrorlist: &MirrorList,
     dir: String,
     file: String,
-    hosts_and_urls: &Vec<(i64, Vec<String>)>,
+    hosts_and_urls: &[(i64, Vec<String>)],
 ) -> (hyper::StatusCode, String) {
     let mut preference = 100;
     let fdcdc_index =
-        find_in_file_details_cache_directory_cache(&mirrorlist.get_FileDetailsCache(), &dir);
+        find_in_file_details_cache_directory_cache(mirrorlist.get_FileDetailsCache(), &dir);
     if fdcdc_index == -1 {
         return (
             StatusCode::NOT_FOUND,
@@ -987,7 +990,7 @@ fn do_metalink(
             wrong_file = false;
         }
     }
-    if wrong_file || fdcf.len() == 0 {
+    if wrong_file || fdcf.is_empty() {
         return (
             StatusCode::NOT_FOUND,
             metalink_failuredoc(format!("{}/{} not found or has not metalink", dir, file)),
@@ -1029,8 +1032,8 @@ fn do_metalink(
             }
         }
         for url in hcurls {
-            let protocol: Vec<&str> = url.split(":").collect();
-            if protocol.len() == 0 {
+            let protocol: Vec<&str> = url.split(':').collect();
+            if protocol.is_empty() {
                 continue;
             }
             // Following comment is from the python implementation:
@@ -1047,8 +1050,7 @@ fn do_metalink(
             doc += "\" type=\"";
             doc += protocol[0];
             doc += "\" location=\"";
-            doc +=
-                &find_in_int_string_map(&mirrorlist.get_HostCountryCache(), *host).to_uppercase();
+            doc += &find_in_int_string_map(mirrorlist.get_HostCountryCache(), *host).to_uppercase();
             doc += &format!("\" preference=\"{}\"{}>", preference, private);
             doc += url;
             doc += "</url>\n";
@@ -1133,14 +1135,14 @@ fn setup_continents(file: &str, ccrc: &[StringStringMap]) -> HashMap<String, Str
                 return result;
             }
         };
-        let e: Vec<&str> = l.split(",").collect();
+        let e: Vec<&str> = l.split(',').collect();
         // The country_continent CSV file uses 2 characters for all countries
         // and all continents.
         if e[0].len() != 2 {
             continue;
         }
         let mut continent = find_in_string_string_map(ccrc, &String::from(e[0]));
-        if continent == "" {
+        if continent.is_empty() {
             continent = String::from(e[1]);
         }
         result.insert(String::from(e[0]), continent);
@@ -1168,7 +1170,7 @@ async fn main() {
     let mut listen = String::from("127.0.0.1");
     let mut port: usize = 3000;
 
-    let args: Vec<String> = env::args().map(|x| x.to_string()).collect();
+    let args: Vec<String> = env::args().collect();
     let program = args[0].clone();
 
     let mut opts = Options::new();
@@ -1326,12 +1328,12 @@ async fn main() {
     info!("Loading I2 netblocks");
     let i2_cache = Arc::new(create_ip_tree(&i2_netblocks));
 
-    if asn_cache.0.len() == 0 {
+    if asn_cache.0.is_empty() {
         error!("Creating ASN cache failed. Exiting!");
         process::exit(1);
     }
 
-    if i2_cache.0.len() == 0 {
+    if i2_cache.0.is_empty() {
         error!("Creating Internet2 cache failed. Exiting!");
         process::exit(1);
     }
@@ -1339,7 +1341,7 @@ async fn main() {
     info!("Loading country-continents");
     let cc_redirect = Arc::new(setup_continents(
         &cccsv,
-        &mirrorlist.get_CountryContinentRedirectCache(),
+        mirrorlist.get_CountryContinentRedirectCache(),
     ));
 
     if cc_redirect.len() == 0 {
@@ -1362,14 +1364,16 @@ async fn main() {
             Ok::<_, Infallible>(service_fn(move |req| {
                 let response = do_mirrorlist(
                     req,
-                    &val,
-                    &remote_addr.ip(),
-                    &asn,
-                    &i2,
-                    &geoip2,
-                    &cc,
-                    &lf,
-                    minimum,
+                    &mut DoMirrorlist {
+                        mirrorlist: &val,
+                        remote: &remote_addr.ip(),
+                        asn_cache: &asn,
+                        i2_cache: &i2,
+                        geoip: &geoip2,
+                        cc: &cc,
+                        log_file: &lf,
+                        minimum,
+                    },
                 );
                 async move { Ok::<_, Infallible>(response) }
             }))
