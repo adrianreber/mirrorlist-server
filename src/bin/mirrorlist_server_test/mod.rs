@@ -58,16 +58,16 @@ fn find_in_ip_tree_test() {
     let asn_cache = create_ip_tree(file_path.to_str().unwrap());
     let mut ip = IpAddr::from_str("134.108.34.134").unwrap();
     let mut result = find_in_ip_tree(&asn_cache, &ip);
-    assert_eq!(result.0.is_ipv4(), true);
-    assert_eq!(result.0.is_ipv6(), false);
+    assert!(result.0.is_ipv4());
+    assert!(!result.0.is_ipv6());
     assert_eq!(result.1, "553");
     ip = IpAddr::from_str("127.0.0.1").unwrap();
     result = find_in_ip_tree(&asn_cache, &ip);
     assert_eq!(result.1, "");
     ip = IpAddr::from_str("2001:7c0:700:1234::4321").unwrap();
     result = find_in_ip_tree(&asn_cache, &ip);
-    assert_eq!(result.0.is_ipv4(), false);
-    assert_eq!(result.0.is_ipv6(), true);
+    assert!(!result.0.is_ipv4());
+    assert!(result.0.is_ipv6());
     assert_eq!(result.1, "553");
     drop(file);
     dir.close().unwrap();
@@ -87,10 +87,7 @@ fn do_mirrorlist_test() {
     let mut ml2 = MirrorListCacheType::new();
     ml2.set_directory("directory/level/three/repodata".to_string());
 
-    let mut global: Vec<i64> = Vec::new();
-    global.push(1);
-    global.push(42);
-    global.push(100);
+    let global: Vec<i64> = vec![1, 42, 100];
     ml1.set_Global(global.clone());
     ml2.set_Global(global);
 
@@ -173,17 +170,18 @@ fn do_mirrorlist_test() {
     let cc: HashMap<String, String> = HashMap::new();
     let log_file = File::create(dir.path().join("join")).unwrap();
 
-    let mut response = do_mirrorlist(
-        request,
-        &mirrorlist,
-        &remote,
-        &asn_cache,
-        &asn_cache,
-        &geoip_reader,
-        &cc,
-        &log_file,
-        5,
-    );
+    let mut p = DoMirrorlist {
+        mirrorlist: &mirrorlist.clone(),
+        remote: &remote,
+        asn_cache: &asn_cache,
+        i2_cache: &asn_cache,
+        geoip: &geoip_reader,
+        cc: &cc,
+        log_file: &log_file,
+        minimum: 5,
+    };
+
+    let mut response = do_mirrorlist(request, &mut p);
     assert_eq!(response.status(), 404);
     assert_eq!(
         Runtime::new()
@@ -195,17 +193,7 @@ fn do_mirrorlist_test() {
 
     request = Request::new(Body::empty());
     *request.uri_mut() = "/mirrorlist".parse().unwrap();
-    response = do_mirrorlist(
-        request,
-        &mirrorlist,
-        &remote,
-        &asn_cache,
-        &asn_cache,
-        &geoip_reader,
-        &cc,
-        &log_file,
-        5,
-    );
+    response = do_mirrorlist(request, &mut p);
     assert_eq!(response.status(), 200);
     assert_eq!(
         Runtime::new()
@@ -217,17 +205,7 @@ fn do_mirrorlist_test() {
 
     request = Request::new(Body::empty());
     *request.uri_mut() = "/metalink".parse().unwrap();
-    response = do_mirrorlist(
-        request,
-        &mirrorlist,
-        &remote,
-        &asn_cache,
-        &asn_cache,
-        &geoip_reader,
-        &cc,
-        &log_file,
-        5,
-    );
+    response = do_mirrorlist(request, &mut p);
     assert_eq!(response.status(), 200);
     assert_eq!(
         response.headers()["content-type"],
@@ -241,17 +219,7 @@ fn do_mirrorlist_test() {
 
     request = Request::new(Body::empty());
     *request.uri_mut() = "/mirrorlist?path=n/a".parse().unwrap();
-    response = do_mirrorlist(
-        request,
-        &mirrorlist,
-        &remote,
-        &asn_cache,
-        &asn_cache,
-        &geoip_reader,
-        &cc,
-        &log_file,
-        5,
-    );
+    response = do_mirrorlist(request, &mut p);
     assert_eq!(response.status(), 404);
     assert_eq!(
         Runtime::new()
@@ -265,17 +233,7 @@ fn do_mirrorlist_test() {
     *request.uri_mut() = "/mirrorlist?path=directory/level/three&ip=10.11.12.331"
         .parse()
         .unwrap();
-    response = do_mirrorlist(
-        request,
-        &mirrorlist,
-        &remote,
-        &asn_cache,
-        &asn_cache,
-        &geoip_reader,
-        &cc,
-        &log_file,
-        5,
-    );
+    response = do_mirrorlist(request, &mut p);
     assert_eq!(response.status(), 500);
     assert_eq!(
         Runtime::new()
@@ -289,17 +247,7 @@ fn do_mirrorlist_test() {
     *request.uri_mut() = "/mirrorlist?path=directory/level/three&country=sE"
         .parse()
         .unwrap();
-    response = do_mirrorlist(
-        request,
-        &mirrorlist,
-        &remote,
-        &asn_cache,
-        &asn_cache,
-        &geoip_reader,
-        &cc,
-        &log_file,
-        5,
-    );
+    response = do_mirrorlist(request, &mut p);
     assert_eq!(response.status(), 200);
     assert_eq!(
         Runtime::new()
@@ -313,17 +261,8 @@ fn do_mirrorlist_test() {
     *request.uri_mut() = "/mirrorlist?path=directory/level/three&ip=89.160.20.113"
         .parse()
         .unwrap();
-    response = do_mirrorlist(
-        request,
-        &mirrorlist,
-        &remote,
-        &asn_cache,
-        &asn_cache,
-        &geoip_reader,
-        &cc,
-        &log_file,
-        1,
-    );
+    p.minimum = 1;
+    response = do_mirrorlist(request, &mut p);
     assert_eq!(response.status(), 200);
     assert_eq!(
         Runtime::new()
@@ -337,17 +276,8 @@ fn do_mirrorlist_test() {
     *request.uri_mut() = "/mirrorlist?path=directory/level/three&ip=89.160.20.113"
         .parse()
         .unwrap();
-    response = do_mirrorlist(
-        request,
-        &mirrorlist,
-        &remote,
-        &asn_cache,
-        &asn_cache,
-        &geoip_reader,
-        &cc,
-        &log_file,
-        2,
-    );
+    p.minimum = 2;
+    response = do_mirrorlist(request, &mut p);
     assert_eq!(response.status(), 200);
     assert!(Runtime::new()
             .unwrap()
@@ -359,17 +289,7 @@ fn do_mirrorlist_test() {
     *request.uri_mut() = "/metalink?repo=repo-name&arch=arch-name&ip=89.160.20.113"
         .parse()
         .unwrap();
-    response = do_mirrorlist(
-        request,
-        &mirrorlist,
-        &remote,
-        &asn_cache,
-        &asn_cache,
-        &geoip_reader,
-        &cc,
-        &log_file,
-        2,
-    );
+    response = do_mirrorlist(request, &mut p);
     assert_eq!(response.status(), 404);
     assert!(Runtime::new()
         .unwrap()
@@ -389,17 +309,9 @@ fn do_mirrorlist_test() {
     *request.uri_mut() = "/metalink?repo=repo-name&arch=arch-name&ip=89.160.20.113"
         .parse()
         .unwrap();
-    response = do_mirrorlist(
-        request,
-        &mirrorlist,
-        &remote,
-        &asn_cache,
-        &asn_cache,
-        &geoip_reader,
-        &cc,
-        &log_file,
-        2,
-    );
+    let m_tmp1 = &mirrorlist.clone();
+    p.mirrorlist = m_tmp1;
+    response = do_mirrorlist(request, &mut p);
     assert_eq!(response.status(), 500);
     assert!(Runtime::new()
         .unwrap()
@@ -414,17 +326,9 @@ fn do_mirrorlist_test() {
     *request.uri_mut() = "/metalink?repo=repo-name&arch=arch-name&ip=89.160.20.113"
         .parse()
         .unwrap();
-    response = do_mirrorlist(
-        request,
-        &mirrorlist,
-        &remote,
-        &asn_cache,
-        &asn_cache,
-        &geoip_reader,
-        &cc,
-        &log_file,
-        2,
-    );
+    let m_tmp2 = &mirrorlist.clone();
+    p.mirrorlist = m_tmp2;
+    response = do_mirrorlist(request, &mut p);
     assert_eq!(response.status(), 404);
     assert!(Runtime::new()
         .unwrap()
@@ -457,34 +361,21 @@ fn do_mirrorlist_test() {
     *request.uri_mut() = "/metalink?repo=repo-name&arch=arch-name&ip=89.160.20.113"
         .parse()
         .unwrap();
-    response = do_mirrorlist(
-        request,
-        &mirrorlist,
-        &remote,
-        &asn_cache,
-        &asn_cache,
-        &geoip_reader,
-        &cc,
-        &log_file,
-        2,
-    );
+    p.mirrorlist = &mirrorlist;
+    response = do_mirrorlist(request, &mut p);
     println!("{:#?}", response);
     assert_eq!(response.status(), 200);
     let response_body = Runtime::new()
         .unwrap()
         .block_on(read_response_body(response))
         .unwrap();
-    assert!(response_body
-        .clone()
-        .contains("<hash type=\"md5\">MD5555</hash>"));
+    assert!(response_body.contains("<hash type=\"md5\">MD5555</hash>"));
 
-    assert!(response_body
-        .clone()
-        .contains("<mm0:timestamp>17</mm0:timestamp>"));
+    assert!(response_body.contains("<mm0:timestamp>17</mm0:timestamp>"));
 
-    assert!(response_body.clone().contains("<size>3</size>"));
+    assert!(response_body.contains("<size>3</size>"));
 
-    assert!(response_body.clone().contains("<file name=\"repomd.xml\">"));
+    assert!(response_body.contains("<file name=\"repomd.xml\">"));
 
     drop(file);
     drop(log_file);
