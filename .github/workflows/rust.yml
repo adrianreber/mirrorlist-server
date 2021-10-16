@@ -10,6 +10,20 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
     - uses: actions/checkout@v2
@@ -19,5 +33,9 @@ jobs:
       run: |
         cargo clippy --verbose
         cargo clippy --tests --verbose
+    - name: Prepare database
+      run: |
+        sudo apt-get install -y postgresql-client
+        PGPASSWORD=test_password psql -h localhost -U test_user test_db < testdata/database-setup.sql
     - name: Run tests
-      run: cargo test --verbose
+      run: TEST_DATABASE_URL="postgresql://test_user:test_password@localhost/test_db" cargo test --verbose -- --test-threads=1
