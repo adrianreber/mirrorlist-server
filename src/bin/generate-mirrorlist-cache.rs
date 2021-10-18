@@ -97,15 +97,13 @@ fn get_host_country_allowed(c: &PgConnection) -> Vec<(i32, String)> {
         .expect("Error loading host ids")
 }
 
-type Directory = (i32, String);
-
-fn get_directories(c: &PgConnection) -> Vec<Directory> {
+fn get_directories(c: &PgConnection) -> Vec<db::models::Directory> {
     use db::schema::directory::dsl::*;
     let query = directory.select((id, name));
     let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query);
     print_step(debug.to_string());
     query
-        .load::<Directory>(c)
+        .load::<db::models::Directory>(c)
         .expect("Error loading directories")
 }
 
@@ -598,7 +596,7 @@ fn get_hnbc(c: &PgConnection, hosts: &[Host]) -> RepeatedField<StringRepeatedInt
 /* RepoArchToDirectoryName */
 fn get_ratdn(
     c: &PgConnection,
-    directories: &[Directory],
+    directories: &[db::models::Directory],
     repositories: &[Repository],
 ) -> RepeatedField<StringStringMap> {
     let mut ratdn: RepeatedField<StringStringMap> = RepeatedField::new();
@@ -614,7 +612,7 @@ fn get_ratdn(
             if r.0.as_ref().unwrap().is_empty() {
                 continue;
             }
-            if r.4.unwrap() == d.0 {
+            if r.4.unwrap() == d.id {
                 found_repos.push(r.clone());
             }
         }
@@ -644,7 +642,7 @@ fn get_ratdn(
             let mut repo = StringStringMap::new();
 
             repo.set_key(key);
-            repo.set_value(d.1.clone());
+            repo.set_value(d.name.clone());
             ratdn.push(repo);
         }
     }
@@ -656,7 +654,7 @@ fn get_ratdn(
 fn get_mlc(
     c: &PgConnection,
     hosts: &[Host],
-    directories: &[Directory],
+    directories: &[db::models::Directory],
     host_category_urls: &[(i32, i32, String)],
 ) -> (
     RepeatedField<MirrorListCacheType>,
@@ -714,8 +712,8 @@ fn get_mlc(
 
     for c in &categories {
         for d in directories {
-            if c.1 == d.0 {
-                topdir_hash.insert(c.0, d.1.len().try_into().unwrap());
+            if c.1 == d.id {
+                topdir_hash.insert(c.0, d.name.len().try_into().unwrap());
             }
         }
     }
@@ -750,21 +748,19 @@ fn get_mlc(
     if debug == 0 {
         pb.set_draw_target(ProgressDrawTarget::hidden());
     }
-    let mut d_counter = 0;
-    for d in directories {
-        d_counter += 1;
+    for (d_counter, d) in directories.iter().enumerate() {
         if d_counter % 100 == 0 {
             pb.inc(100);
         }
 
         for fd in &file_details {
-            if fd.0 == d.0 {
-                let mut i = find_in_file_details_cache_directory_cache(&fdcdc, &d.1);
+            if fd.0 == d.id {
+                let mut i = find_in_file_details_cache_directory_cache(&fdcdc, &d.name);
                 if i == -1 {
                     let mut tmp = FileDetailsCacheDirectoryType::new();
-                    tmp.set_directory(d.1.clone());
+                    tmp.set_directory(d.name.clone());
                     fdcdc.push(tmp.clone());
-                    i = find_in_file_details_cache_directory_cache(&fdcdc, &d.1);
+                    i = find_in_file_details_cache_directory_cache(&fdcdc, &d.name);
                 }
                 let f: &mut FileDetailsCacheDirectoryType = &mut fdcdc[i as usize];
                 let fdcfc = f.mut_FileDetailsCacheFiles();
@@ -807,7 +803,7 @@ fn get_mlc(
         // Check if this directory belongs to a category
         let mut category_id: i32 = -1;
         for cd in &category_directories {
-            if cd.1 == d.0 {
+            if cd.1 == d.id {
                 category_id = cd.0;
                 break;
             }
@@ -817,9 +813,9 @@ fn get_mlc(
         }
 
         let mut ml = MirrorListCacheType::new();
-        ml.set_directory(d.1.clone());
+        ml.set_directory(d.name.clone());
         /* This only works as long as there are not UTF-8 characters in the path names. */
-        let dirname = String::from(&d.1.clone());
+        let dirname = String::from(&d.name.clone());
         let top_len: usize = match topdir_hash[&category_id] as usize > dirname.len()
             && dirname.as_bytes()[topdir_hash[&category_id] as usize] == b'/'
         {
@@ -843,12 +839,12 @@ fn get_mlc(
         for (h_id, hc_id) in &host_cat_hash[&category_id] {
             let always_up2date: bool = host_cat_id_hash[&(*h_id as i32)];
             let host = get_host(*h_id as i32, hosts);
-            if !(always_up2date || hcdir_hc_id_hash.contains_key(&d.0)) {
+            if !(always_up2date || hcdir_hc_id_hash.contains_key(&d.id)) {
                 continue;
             }
             let mut up2date = false;
             if !always_up2date {
-                for hcdir in &hcdir_hc_id_hash[&d.0] {
+                for hcdir in &hcdir_hc_id_hash[&d.id] {
                     if *hcdir as i64 == *hc_id {
                         up2date = true;
                         break;
