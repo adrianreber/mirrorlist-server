@@ -813,6 +813,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
     // Shuffle and order by prefix size
     netblock_results.shuffle(&mut thread_rng());
     netblock_results.sort_by_key(|k| IpNet::from_str(&k.0).unwrap().prefix_len());
+    netblock_results.reverse();
 
     for e in netblock_results {
         all_hosts.push(e.1);
