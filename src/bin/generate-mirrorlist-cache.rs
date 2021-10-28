@@ -337,7 +337,7 @@ fn is_host_active(h: Host) -> bool {
     h.1 && h.2 && h.3 && h.9
 }
 
-fn is_host_private(h: Host) -> bool {
+fn is_host_private(h: &Host) -> bool {
     h.10 || h.11
 }
 
@@ -812,11 +812,15 @@ fn get_mlc(
             continue;
         }
 
+        if !topdir_hash.contains_key(&category_id) {
+            continue;
+        }
+
         let mut ml = MirrorListCacheType::new();
         ml.set_directory(d.name.clone());
         /* This only works as long as there are not UTF-8 characters in the path names. */
         let dirname = String::from(&d.name.clone());
-        let top_len: usize = match topdir_hash[&category_id] as usize > dirname.len()
+        let top_len: usize = match topdir_hash[&category_id] as usize > 0
             && dirname.as_bytes()[topdir_hash[&category_id] as usize] == b'/'
         {
             true => {
@@ -870,7 +874,7 @@ fn get_mlc(
             }
 
             // Private mirrors can still select to be available via Internet2
-            if is_host_private(host.clone()) && !host.13 {
+            if is_host_private(&host) && !host.13 {
                 continue;
             }
 
@@ -890,7 +894,7 @@ fn get_mlc(
             }
 
             // But a private mirror should never be added to 'Global'
-            if is_host_private(host.clone()) {
+            if is_host_private(&host) {
                 continue;
             }
 
