@@ -185,7 +185,7 @@ fn get_same_continent_hosts(
     by_country: &[StringRepeatedIntMap],
     cc: &HashMap<String, String>,
     country: String,
-    mut hosts: &mut Vec<i64>,
+    hosts: &mut Vec<i64>,
 ) -> String {
     let mut header = String::new();
     let continent: String;
@@ -200,7 +200,7 @@ fn get_same_continent_hosts(
     // Get the continent and get all corresponding countries
     for c in cc.keys() {
         if cc[c] == continent && c != &country.to_uppercase() {
-            let ret = do_countrylist(by_country, &mut hosts, c.to_string());
+            let ret = do_countrylist(by_country, hosts, c.to_string());
             if !ret.is_empty() {
                 header.push_str(&ret);
             }
