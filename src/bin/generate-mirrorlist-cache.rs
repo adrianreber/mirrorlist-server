@@ -821,6 +821,7 @@ fn get_mlc(
         /* This only works as long as there are not UTF-8 characters in the path names. */
         let dirname = String::from(&d.name.clone());
         let top_len: usize = match topdir_hash[&category_id] as usize > 0
+            && dirname.len() > topdir_hash[&category_id].try_into().unwrap()
             && dirname.as_bytes()[topdir_hash[&category_id] as usize] == b'/'
         {
             true => {
