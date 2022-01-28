@@ -123,7 +123,7 @@ checksum = "53ecafc952c4528d9b51a458d1a8904b81783feff9fde08ab6ed2545ff396872"
 dependencies = [
  "cfg-if 1.0.0",
  "libc",
- "socket2 0.4.3",
+ "socket2 0.4.4",
  "winapi",
 ]
 
@@ -335,7 +335,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project",
- "socket2 0.4.3",
+ "socket2 0.4.4",
  "tokio",
  "tower-service",
  "tracing",
@@ -422,9 +422,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.113"
+version = "0.2.115"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eef78b64d87775463c549fbd80e19249ef436ea3bf1de2a1eb7e717ec7fab1e9"
+checksum = "0a8d982fa7a96a000f6ec4cfe966de9703eccde29750df2bb8949da91b0e818d"
 
 [[package]]
 name = "log"
@@ -502,7 +502,7 @@ dependencies = [
  "protobuf-codegen-pure",
  "rand",
  "regex",
- "socket2 0.4.3",
+ "socket2 0.4.4",
  "tempfile",
  "tokio",
  "tracing",
@@ -792,9 +792,9 @@ dependencies = [
 
 [[package]]
 name = "socket2"
-version = "0.4.3"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f82496b90c36d70af5fcd482edaa2e0bd16fade569de1330405fecbbdac736b"
+checksum = "66d72b759436ae32898a2af0a14218dbf55efde3feeb170eb623637db85ee1e0"
 dependencies = [
  "libc",
  "winapi",
