@@ -152,7 +152,7 @@ fn get_repositories_test() {
     if r.is_err() {
         println!("{:#?}", r);
     }
-    assert!(!r.is_err());
+    assert!(r.is_ok());
 
     let r = get_repositories(&c);
     assert_eq!(r[0].0.as_ref().unwrap(), &"pre".to_string());
@@ -178,7 +178,7 @@ fn get_host_categories_test() {
     if r.is_err() {
         println!("{:#?}", r);
     }
-    assert!(!r.is_err());
+    assert!(r.is_ok());
 
     let hc = get_host_categories(&c);
     assert_eq!(hc.len(), 2);
@@ -209,7 +209,7 @@ fn get_mlc_test_empty_topdir() {
     if r.is_err() {
         println!("{:#?}", r);
     }
-    assert!(!r.is_err());
+    assert!(r.is_ok());
 
     let hosts = get_hosts(&c);
     let directories = get_directories(&c);
@@ -249,7 +249,7 @@ fn get_mlc_test_non_empty_topdir() {
     if r.is_err() {
         println!("{:#?}", r);
     }
-    assert!(!r.is_err());
+    assert!(r.is_ok());
 
     let hosts = get_hosts(&c);
     let directories = get_directories(&c);
