@@ -830,12 +830,11 @@ fn get_mlc(
             }
             false => topdir_hash[&category_id] as usize,
         };
-        let subpath: String;
-        if top_len > dirname.len() {
-            subpath = String::new();
+        let subpath: String = if top_len > dirname.len() {
+            String::new()
         } else {
-            subpath = String::from_utf8_lossy(&dirname.as_bytes()[top_len..]).to_string();
-        }
+            String::from_utf8_lossy(&dirname.as_bytes()[top_len..]).to_string()
+        };
         ml.set_Subpath(subpath);
         let mut global: Vec<i64> = Vec::new();
         let mut by_country: RepeatedField<StringRepeatedIntMap> = RepeatedField::new();

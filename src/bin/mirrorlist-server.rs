@@ -188,14 +188,13 @@ fn get_same_continent_hosts(
     hosts: &mut Vec<i64>,
 ) -> String {
     let mut header = String::new();
-    let continent: String;
-    if cc.contains_key(&country.to_uppercase()) {
-        continent = String::from(&cc[&country.to_uppercase()]);
+    let continent: String = if cc.contains_key(&country.to_uppercase()) {
+        String::from(&cc[&country.to_uppercase()])
     } else {
         // The country does not exist in the country -> continent mapping.
         // This can happen as it relies on user input.
         return header;
-    }
+    };
     // Now we know that the country exists in the mapping.
     // Get the continent and get all corresponding countries
     for c in cc.keys() {
@@ -398,7 +397,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         if index == -1 {
             // path was a file
             sdir = path.split('/').collect();
-            file.push_str(&sdir[sdir.len() - 1].to_string());
+            file.push_str(sdir[sdir.len() - 1]);
             dir.push_str(path.trim_end_matches(&file).trim_end_matches('/'));
             let index = find_in_mirrorlist_cache(mirrorlist_caches, &dir);
             if index == -1 {
@@ -476,12 +475,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
     let mut ip_string = get_param(&query_params, "ip");
     if req.headers().contains_key("x-forwarded-for") && ip_string.is_empty() {
         ip_string = String::from(req.headers()["x-forwarded-for"].to_str().unwrap());
-        ip_string = String::from(
-            ip_string
-                .rsplit(", ")
-                .next()
-                .unwrap_or_else(|| ip_string.as_str()),
-        );
+        ip_string = String::from(ip_string.rsplit(", ").next().unwrap_or(ip_string.as_str()));
     } else if ip_string.is_empty() {
         ip_string.push_str(&p.remote.to_string());
     }
@@ -770,9 +764,8 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
             path_is_dir,
         );
         if check_for_param(&query_params, "protocol") {
-            let mut try_protocols: Vec<&str>;
             let protocols = get_param(&query_params, "protocol");
-            try_protocols = protocols.split(',').collect();
+            let mut try_protocols: Vec<&str> = protocols.split(',').collect();
             if !try_protocols.is_empty() {
                 try_protocols.sort_unstable();
                 try_protocols.dedup();
@@ -845,9 +838,8 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
 
     let mut protocols_trimmed = false;
     if check_for_param(&query_params, "protocol") {
-        let mut try_protocols: Vec<&str>;
         let protocols = get_param(&query_params, "protocol");
-        try_protocols = protocols.split(',').collect();
+        let mut try_protocols: Vec<&str> = protocols.split(',').collect();
         if !try_protocols.is_empty() {
             try_protocols.sort_unstable();
             try_protocols.dedup();
