@@ -30,6 +30,7 @@ use std::cmp;
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::env;
+use std::fmt::Write as _;
 use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
@@ -176,7 +177,7 @@ fn do_countrylist(
             // Add all hostids to the result
             hosts.push(*host);
         }
-        header.push_str(&format!("country = {} ", country));
+        let _ = write!(header, "country = {} ", country);
     }
     header
 }
@@ -428,7 +429,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
             repo = get_param(&query_params, "repo");
         }
         let arch = get_param(&query_params, "arch");
-        header.push_str(&format!("# repo = {} arch = {} ", repo, arch));
+        let _ = write!(header, "# repo = {} arch = {} ", repo, arch);
         if find_in_string_bool_map(p.mirrorlist.get_DisabledRepositoryCache(), &repo) {
             return http_response(metalink, "repo disabled".to_string(), StatusCode::OK);
         }
@@ -448,8 +449,11 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
             for r in repos {
                 let elements: Vec<&str> = r.split('+').collect();
                 if elements.len() == 2 {
-                    repo_information
-                        .push_str(&format!("# repo={}&arch={}\n", elements[0], elements[1]));
+                    let _ = writeln!(
+                        repo_information,
+                        "# repo={}&arch={}",
+                        elements[0], elements[1]
+                    );
                 }
             }
             return http_response(metalink, repo_information, StatusCode::NOT_FOUND);
@@ -572,7 +576,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
             }
         }
         if !asn_results.is_empty() {
-            header.push_str(&format!("Using ASN {} ", asn.1));
+            let _ = write!(header, "Using ASN {} ", asn.1);
             mirrors_found += asn_results.len();
             if found_via.is_empty() {
                 found_via = String::from("asn");
@@ -851,10 +855,11 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
     }
 
     if check_for_param(&query_params, "time") {
-        header.push_str(&format!(
+        let _ = write!(
+            header,
             "\n# database creation time: {}",
             &p.mirrorlist.get_Time()
-        ));
+        );
     }
 
     if metalink {
@@ -920,38 +925,33 @@ fn metalink_details(fd: &FileDetailsType, indent: String) -> String {
     let mut result = String::new();
     if fd.get_TimeStamp() != 0 {
         result.push_str(&indent);
-        result.push_str(&format!(
-            " <mm0:timestamp>{}</mm0:timestamp>\n",
+        let _ = writeln!(
+            result,
+            " <mm0:timestamp>{}</mm0:timestamp>",
             fd.get_TimeStamp()
-        ));
+        );
     }
     if fd.get_Size() != 0 {
         result.push_str(&indent);
-        result.push_str(&format!(" <size>{}</size>\n", fd.get_Size()));
+        let _ = writeln!(result, " <size>{}</size>", fd.get_Size());
     }
     result.push_str(&indent);
     result.push_str(" <verification>\n");
     if fd.get_MD5() != "" {
         result.push_str(&indent);
-        result.push_str(&format!("  <hash type=\"md5\">{}</hash>\n", fd.get_MD5()));
+        let _ = writeln!(result, "  <hash type=\"md5\">{}</hash>", fd.get_MD5());
     }
     if fd.get_SHA1() != "" {
         result.push_str(&indent);
-        result.push_str(&format!("  <hash type=\"sha1\">{}</hash>\n", fd.get_SHA1()));
+        let _ = writeln!(result, "  <hash type=\"sha1\">{}</hash>", fd.get_SHA1());
     }
     if fd.get_SHA256() != "" {
         result.push_str(&indent);
-        result.push_str(&format!(
-            "  <hash type=\"sha256\">{}</hash>\n",
-            fd.get_SHA256()
-        ));
+        let _ = writeln!(result, "  <hash type=\"sha256\">{}</hash>", fd.get_SHA256());
     }
     if fd.get_SHA512() != "" {
         result.push_str(&indent);
-        result.push_str(&format!(
-            "  <hash type=\"sha512\">{}</hash>\n",
-            fd.get_SHA512()
-        ));
+        let _ = writeln!(result, "  <hash type=\"sha512\">{}</hash>", fd.get_SHA512());
     }
     result.push_str(&indent);
     result.push_str(" </verification>\n");
@@ -991,7 +991,7 @@ fn do_metalink(
     }
     let mut doc = metalink_header();
     doc.push_str(" <files>\n");
-    doc.push_str(&format!("  <file name=\"{}\">\n", file));
+    let _ = writeln!(doc, "  <file name=\"{}\">", file);
     let mut count = 0;
     for e in fdcf {
         if e.get_filename() != file {
@@ -1044,7 +1044,7 @@ fn do_metalink(
             doc += protocol[0];
             doc += "\" location=\"";
             doc += &find_in_int_string_map(mirrorlist.get_HostCountryCache(), *host).to_uppercase();
-            doc += &format!("\" preference=\"{}\"{}>", preference, private);
+            let _ = write!(doc, "\" preference=\"{}\"{}>", preference, private);
             doc += url;
             doc += "</url>\n";
         }
