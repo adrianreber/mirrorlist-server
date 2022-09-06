@@ -555,6 +555,7 @@ fn get_hnbc(c: &PgConnection, hosts: &[Host]) -> RepeatedField<StringRepeatedInt
             .template(
                 " Resolving hosts [{elapsed_precise}] {wide_bar:.cyan/blue} {pos:>7}/{len:7} {msg}",
             )
+            .unwrap()
             .progress_chars("##-"),
     );
     if debug == 0 {
@@ -744,6 +745,7 @@ fn get_mlc(
     let pb = ProgressBar::new(directories.len() as u64);
     pb.set_style(ProgressStyle::default_bar()
         .template(" Looping over directories [{elapsed_precise}] {wide_bar:.cyan/blue} {pos:>7}/{len:7} {msg}")
+        .unwrap()
         .progress_chars("##-"));
     if debug == 0 {
         pb.set_draw_target(ProgressDrawTarget::hidden());
