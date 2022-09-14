@@ -19,7 +19,7 @@ ipnet = "2.5.0"
 treebitmap = "0.4.0"
 maxminddb = "0.23.0"
 rand = "0.8"
-itertools = "0.10.3"
+itertools = "0.10.4"
 getopts = "0.2"
 diesel = { version = "1.4.8", features = ["postgres"] }
 dotenv = "0.15.0"
