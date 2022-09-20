@@ -77,7 +77,7 @@ fn print_step(msg: String) {
     );
 }
 
-fn get_netblocks(c: &PgConnection) -> Vec<(i32, String)> {
+fn get_netblocks(c: &mut PgConnection) -> Vec<(i32, String)> {
     use db::schema::host_netblock::dsl::*;
     let query = host_netblock.select((host_id, netblock));
     let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query);
@@ -87,7 +87,7 @@ fn get_netblocks(c: &PgConnection) -> Vec<(i32, String)> {
         .expect("Error loading host ids")
 }
 
-fn get_host_country_allowed(c: &PgConnection) -> Vec<(i32, String)> {
+fn get_host_country_allowed(c: &mut PgConnection) -> Vec<(i32, String)> {
     use db::schema::host_country_allowed::dsl::*;
     let query = host_country_allowed.select((host_id, country));
     let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query);
@@ -97,7 +97,7 @@ fn get_host_country_allowed(c: &PgConnection) -> Vec<(i32, String)> {
         .expect("Error loading host ids")
 }
 
-fn get_directories(c: &PgConnection) -> Vec<db::models::Directory> {
+fn get_directories(c: &mut PgConnection) -> Vec<db::models::Directory> {
     use db::schema::directory::dsl::*;
     let query = directory.select((id, name));
     let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query);
@@ -116,7 +116,7 @@ type Repository = (
     bool,
 );
 
-fn get_repositories(c: &PgConnection) -> Vec<Repository> {
+fn get_repositories(c: &mut PgConnection) -> Vec<Repository> {
     use db::schema::repository::dsl::*;
     let query = repository
         .select((
@@ -148,7 +148,7 @@ type FileDetail = (
     Option<String>,
 );
 
-fn get_file_details(c: &PgConnection) -> Vec<FileDetail> {
+fn get_file_details(c: &mut PgConnection) -> Vec<FileDetail> {
     use db::schema::file_detail::dsl::*;
     let query = file_detail
         .select((
@@ -169,7 +169,7 @@ fn get_file_details(c: &PgConnection) -> Vec<FileDetail> {
         .expect("Error loading file details")
 }
 
-fn get_host_categories(c: &PgConnection) -> Vec<(i32, Option<i32>, Option<i32>, bool)> {
+fn get_host_categories(c: &mut PgConnection) -> Vec<(i32, Option<i32>, Option<i32>, bool)> {
     use db::schema::host_category::dsl::*;
     let query = host_category.select((id, host_id, category_id, always_up2date));
     let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query);
@@ -179,7 +179,7 @@ fn get_host_categories(c: &PgConnection) -> Vec<(i32, Option<i32>, Option<i32>, 
         .expect("Error loading host categories")
 }
 
-fn get_arches(c: &PgConnection) -> Vec<(i32, String)> {
+fn get_arches(c: &mut PgConnection) -> Vec<(i32, String)> {
     use db::schema::arch::dsl::*;
     let query = arch.select((id, name));
     let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query);
@@ -189,7 +189,7 @@ fn get_arches(c: &PgConnection) -> Vec<(i32, String)> {
         .expect("Error loading arches")
 }
 
-fn get_category_directories(c: &PgConnection) -> Vec<(i32, i32)> {
+fn get_category_directories(c: &mut PgConnection) -> Vec<(i32, i32)> {
     use db::schema::category_directory::dsl::*;
     let query = category_directory.select((category_id, directory_id));
     let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query);
@@ -199,7 +199,7 @@ fn get_category_directories(c: &PgConnection) -> Vec<(i32, i32)> {
         .expect("Error loading category directories")
 }
 
-fn get_categories(c: &PgConnection) -> Vec<(i32, i32)> {
+fn get_categories(c: &mut PgConnection) -> Vec<(i32, i32)> {
     use db::schema::category::dsl::*;
     let query = category.select((id, topdir_id));
     let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query);
@@ -209,7 +209,7 @@ fn get_categories(c: &PgConnection) -> Vec<(i32, i32)> {
         .expect("Error loading categories")
 }
 
-fn get_netblock_countries(c: &PgConnection) -> Vec<(String, String)> {
+fn get_netblock_countries(c: &mut PgConnection) -> Vec<(String, String)> {
     use db::schema::netblock_country::dsl::*;
     let query = netblock_country.select((netblock, country));
     let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query);
@@ -219,7 +219,7 @@ fn get_netblock_countries(c: &PgConnection) -> Vec<(String, String)> {
         .expect("Error loading country continent redirects")
 }
 
-fn get_country_continent_redirects(c: &PgConnection) -> Vec<(String, String)> {
+fn get_country_continent_redirects(c: &mut PgConnection) -> Vec<(String, String)> {
     use db::schema::country_continent_redirect::dsl::*;
     let query = country_continent_redirect.select((country, continent));
     let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query);
@@ -229,7 +229,7 @@ fn get_country_continent_redirects(c: &PgConnection) -> Vec<(String, String)> {
         .expect("Error loading country continent redirects")
 }
 
-fn get_repository_redirects(c: &PgConnection) -> Vec<(String, Option<String>)> {
+fn get_repository_redirects(c: &mut PgConnection) -> Vec<(String, Option<String>)> {
     use db::schema::repository_redirect::dsl::*;
     let query = repository_redirect.select((from_repo, to_repo));
     let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query);
@@ -239,7 +239,7 @@ fn get_repository_redirects(c: &PgConnection) -> Vec<(String, Option<String>)> {
         .expect("Error loading repository redirects")
 }
 
-fn get_host_category_urls(c: &PgConnection) -> Vec<(i32, i32, String)> {
+fn get_host_category_urls(c: &mut PgConnection) -> Vec<(i32, i32, String)> {
     use db::schema::host_category_url::dsl::*;
     let query = host_category_url
         .select((id, host_category_id, url))
@@ -251,7 +251,7 @@ fn get_host_category_urls(c: &PgConnection) -> Vec<(i32, i32, String)> {
         .expect("Error loading host category urls")
 }
 
-fn get_host_category_dirs(c: &PgConnection) -> Vec<(i32, i32)> {
+fn get_host_category_dirs(c: &mut PgConnection) -> Vec<(i32, i32)> {
     use db::schema::host_category_dir::dsl::*;
     let query = host_category_dir
         .select((host_category_id, directory_id))
@@ -305,7 +305,7 @@ type Host = (
     String,
 );
 
-fn get_hosts(c: &PgConnection) -> Vec<Host> {
+fn get_hosts(c: &mut PgConnection) -> Vec<Host> {
     use db::schema::host::dsl::*;
     use db::schema::site::dsl::*;
 
@@ -494,7 +494,7 @@ fn get_hac(hosts: &[Host]) -> RepeatedField<IntRepeatedIntMap> {
 }
 
 /* HostCountryAllowedCache */
-fn get_hcac(c: &PgConnection, hosts: &[Host]) -> RepeatedField<IntRepeatedStringMap> {
+fn get_hcac(c: &mut PgConnection, hosts: &[Host]) -> RepeatedField<IntRepeatedStringMap> {
     let mut hcac: RepeatedField<IntRepeatedStringMap> = RepeatedField::new();
 
     let hcac_raw = get_host_country_allowed(c);
@@ -543,7 +543,7 @@ fn get_hcurlc(host_category_urls: &[(i32, i32, String)]) -> RepeatedField<IntStr
 }
 
 /* HostNetBlockCache */
-fn get_hnbc(c: &PgConnection, hosts: &[Host]) -> RepeatedField<StringRepeatedIntMap> {
+fn get_hnbc(c: &mut PgConnection, hosts: &[Host]) -> RepeatedField<StringRepeatedIntMap> {
     let mut hnbc: RepeatedField<StringRepeatedIntMap> = RepeatedField::new();
     let netblocks_and_hosts = get_netblocks(c);
     let debug = DEBUG.load(Ordering::SeqCst);
@@ -596,7 +596,7 @@ fn get_hnbc(c: &PgConnection, hosts: &[Host]) -> RepeatedField<StringRepeatedInt
 
 /* RepoArchToDirectoryName */
 fn get_ratdn(
-    c: &PgConnection,
+    c: &mut PgConnection,
     directories: &[db::models::Directory],
     repositories: &[Repository],
 ) -> RepeatedField<StringStringMap> {
@@ -653,7 +653,7 @@ fn get_ratdn(
 
 /* MirrorListCache */
 fn get_mlc(
-    c: &PgConnection,
+    c: &mut PgConnection,
     hosts: &[Host],
     directories: &[db::models::Directory],
     host_category_urls: &[(i32, i32, String)],
@@ -933,7 +933,7 @@ fn get_mlc(
 }
 
 /* RepositoryRedirectCache */
-fn get_rrc(c: &PgConnection) -> RepeatedField<StringStringMap> {
+fn get_rrc(c: &mut PgConnection) -> RepeatedField<StringStringMap> {
     let mut rrc: RepeatedField<StringStringMap> = RepeatedField::new();
 
     let rrc_raw = get_repository_redirects(c);
@@ -951,7 +951,7 @@ fn get_rrc(c: &PgConnection) -> RepeatedField<StringStringMap> {
 }
 
 /* NetblockCountryCache */
-fn get_ncc(c: &PgConnection) -> RepeatedField<StringStringMap> {
+fn get_ncc(c: &mut PgConnection) -> RepeatedField<StringStringMap> {
     let mut ncc: RepeatedField<StringStringMap> = RepeatedField::new();
 
     let ncc_raw = get_netblock_countries(c);
@@ -967,7 +967,7 @@ fn get_ncc(c: &PgConnection) -> RepeatedField<StringStringMap> {
 }
 
 /* CountryContinentRedirectCache */
-fn get_ccrc(c: &PgConnection) -> RepeatedField<StringStringMap> {
+fn get_ccrc(c: &mut PgConnection) -> RepeatedField<StringStringMap> {
     let mut ccrc: RepeatedField<StringStringMap> = RepeatedField::new();
 
     let ccrc_raw = get_country_continent_redirects(c);
@@ -1046,7 +1046,7 @@ fn main() {
         DEBUG.fetch_add(1, Ordering::SeqCst);
     }
 
-    let connection = pg_conn(config_file);
+    let connection = &mut pg_conn(config_file);
     let mut mirrorlist = MirrorList::new();
 
     {
@@ -1054,13 +1054,13 @@ fn main() {
         mirrorlist.set_Time(now.timestamp() as u64);
     }
 
-    let hosts = get_hosts(&connection);
-    let directories = get_directories(&connection);
-    let host_category_urls = get_host_category_urls(&connection);
+    let hosts = get_hosts(connection);
+    let directories = get_directories(connection);
+    let host_category_urls = get_host_category_urls(connection);
 
     {
         /* HostCountryAllowedCache */
-        let hcac = get_hcac(&connection, &hosts);
+        let hcac = get_hcac(connection, &hosts);
         mirrorlist.set_HostCountryAllowedCache(hcac);
     }
 
@@ -1072,7 +1072,7 @@ fn main() {
 
     {
         /* HostNetBlockCache */
-        let hnbc = get_hnbc(&connection, &hosts);
+        let hnbc = get_hnbc(connection, &hosts);
         mirrorlist.set_HostNetblockCache(hnbc);
     }
 
@@ -1102,15 +1102,15 @@ fn main() {
 
     {
         /* MirrorListCache */
-        let (mlc, fdc) = get_mlc(&connection, &hosts, &directories, &host_category_urls);
+        let (mlc, fdc) = get_mlc(connection, &hosts, &directories, &host_category_urls);
         mirrorlist.set_MirrorListCache(mlc);
         mirrorlist.set_FileDetailsCache(fdc);
     }
 
     {
-        let repositories = get_repositories(&connection);
+        let repositories = get_repositories(connection);
         /* RepoArchToDirectoryName */
-        let ratdn = get_ratdn(&connection, &directories, &repositories);
+        let ratdn = get_ratdn(connection, &directories, &repositories);
         mirrorlist.set_RepoArchToDirectoryName(ratdn);
         /* DisabledRepositoryCache */
         let drc = get_drc(&repositories);
@@ -1119,19 +1119,19 @@ fn main() {
 
     {
         /* RepositoryRedirectCache */
-        let rrc = get_rrc(&connection);
+        let rrc = get_rrc(connection);
         mirrorlist.set_RepositoryRedirectCache(rrc);
     }
 
     {
         /* CountryContinentRedirectCache */
-        let ccrc = get_ccrc(&connection);
+        let ccrc = get_ccrc(connection);
         mirrorlist.set_CountryContinentRedirectCache(ccrc);
     }
 
     {
         /* NetblockCountryCache */
-        let ncc = get_ncc(&connection);
+        let ncc = get_ncc(connection);
         mirrorlist.set_NetblockCountryCache(ncc);
     }
 

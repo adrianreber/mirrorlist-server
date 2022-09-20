@@ -27,7 +27,7 @@ fn get_db_connection() -> Result<PgConnection, Box<dyn Error>> {
     Ok(PgConnection::establish(&database_url)?)
 }
 
-fn setup_db(c: &PgConnection, cat_id: i32) -> Result<usize, diesel::result::Error> {
+fn setup_db(c: &mut PgConnection, cat_id: i32) -> Result<usize, diesel::result::Error> {
     DEBUG.fetch_add(1, Ordering::SeqCst);
     use db::schema::{
         category, category_directory, directory, file_detail, host, host_category, repository, site,
@@ -139,7 +139,7 @@ fn setup_db(c: &PgConnection, cat_id: i32) -> Result<usize, diesel::result::Erro
 
 #[test]
 fn get_repositories_test() {
-    let c = match get_db_connection() {
+    let mut c = match get_db_connection() {
         Ok(c) => c,
         Err(e) => {
             println!("Database connection failed {}", e);
@@ -147,14 +147,14 @@ fn get_repositories_test() {
         }
     };
 
-    let r = setup_db(&c, 4);
+    let r = setup_db(&mut c, 4);
 
     if r.is_err() {
         println!("{:#?}", r);
     }
     assert!(r.is_ok());
 
-    let r = get_repositories(&c);
+    let r = get_repositories(&mut c);
     assert_eq!(r[0].0.as_ref().unwrap(), &"pre".to_string());
     assert_eq!(r[0].1.unwrap(), 4);
     assert_eq!(r[0].2.unwrap(), 6);
@@ -165,7 +165,7 @@ fn get_repositories_test() {
 
 #[test]
 fn get_host_categories_test() {
-    let c = match get_db_connection() {
+    let mut c = match get_db_connection() {
         Ok(c) => c,
         Err(e) => {
             println!("Database connection failed {}", e);
@@ -173,14 +173,14 @@ fn get_host_categories_test() {
         }
     };
 
-    let r = setup_db(&c, 4);
+    let r = setup_db(&mut c, 4);
 
     if r.is_err() {
         println!("{:#?}", r);
     }
     assert!(r.is_ok());
 
-    let hc = get_host_categories(&c);
+    let hc = get_host_categories(&mut c);
     assert_eq!(hc.len(), 2);
     assert!(!hc[0].3);
     assert!(hc[1].3);
@@ -196,7 +196,7 @@ fn get_host_categories_test() {
 
 #[test]
 fn get_mlc_test_empty_topdir() {
-    let c = match get_db_connection() {
+    let mut c = match get_db_connection() {
         Ok(c) => c,
         Err(e) => {
             println!("Database connection failed {}", e);
@@ -204,18 +204,18 @@ fn get_mlc_test_empty_topdir() {
         }
     };
 
-    let r = setup_db(&c, 4);
+    let r = setup_db(&mut c, 4);
 
     if r.is_err() {
         println!("{:#?}", r);
     }
     assert!(r.is_ok());
 
-    let hosts = get_hosts(&c);
-    let directories = get_directories(&c);
-    let host_category_urls = get_host_category_urls(&c);
+    let hosts = get_hosts(&mut c);
+    let directories = get_directories(&mut c);
+    let host_category_urls = get_host_category_urls(&mut c);
 
-    let (mlc, fdc) = get_mlc(&c, &hosts, &directories, &host_category_urls);
+    let (mlc, fdc) = get_mlc(&mut c, &hosts, &directories, &host_category_urls);
 
     assert_eq!(fdc.len(), 1);
     assert_eq!(fdc[0].get_directory(), "directory/repodata".to_string());
@@ -236,7 +236,7 @@ fn get_mlc_test_empty_topdir() {
 
 #[test]
 fn get_mlc_test_non_empty_topdir() {
-    let c = match get_db_connection() {
+    let mut c = match get_db_connection() {
         Ok(c) => c,
         Err(e) => {
             println!("Database connection failed {}", e);
@@ -244,18 +244,18 @@ fn get_mlc_test_non_empty_topdir() {
         }
     };
 
-    let r = setup_db(&c, 5);
+    let r = setup_db(&mut c, 5);
 
     if r.is_err() {
         println!("{:#?}", r);
     }
     assert!(r.is_ok());
 
-    let hosts = get_hosts(&c);
-    let directories = get_directories(&c);
-    let host_category_urls = get_host_category_urls(&c);
+    let hosts = get_hosts(&mut c);
+    let directories = get_directories(&mut c);
+    let host_category_urls = get_host_category_urls(&mut c);
 
-    let (mlc, fdc) = get_mlc(&c, &hosts, &directories, &host_category_urls);
+    let (mlc, fdc) = get_mlc(&mut c, &hosts, &directories, &host_category_urls);
 
     assert_eq!(fdc.len(), 1);
     assert_eq!(

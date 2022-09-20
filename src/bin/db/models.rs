@@ -1,8 +1,8 @@
 use crate::db::schema::{host, site};
 
 #[derive(Queryable, Identifiable, Associations)]
-#[belongs_to(Site)]
-#[table_name = "host"]
+#[diesel(belongs_to(Site))]
+#[diesel(table_name = host)]
 pub struct Host {
     pub id: i32,
     pub name: String,
@@ -19,7 +19,7 @@ pub struct Host {
     pub internet2_clients: bool,
 }
 #[derive(Queryable, Identifiable)]
-#[table_name = "site"]
+#[diesel(table_name = site)]
 pub struct Site {
     pub id: i32,
     pub user_active: bool,
