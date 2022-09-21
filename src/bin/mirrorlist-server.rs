@@ -327,10 +327,6 @@ struct DoMirrorlist<'a> {
         IpLookupTable<Ipv4Addr, String>,
         IpLookupTable<Ipv6Addr, String>,
     ),
-    i2_cache: &'a (
-        IpLookupTable<Ipv4Addr, String>,
-        IpLookupTable<Ipv6Addr, String>,
-    ),
     geoip: &'a Reader<std::vec::Vec<u8>>,
     cc: &'a HashMap<String, String>,
     log_file: &'a File,
@@ -619,32 +615,6 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         p.log_file.flush().unwrap();
     }
 
-    let mut i2_results: Vec<i64> = Vec::new();
-    // Check if this is a Internet2 client
-    let i2 = find_in_ip_tree(p.i2_cache, &client_ip);
-    if !i2.1.is_empty() {
-        let by_country_internet2 = &cache.get_ByCountryInternet2();
-        let i = find_in_string_repeated_int_map(by_country_internet2, &client_country);
-        if i != -1 {
-            let hosts = trim_by_client_country(
-                p.mirrorlist.get_HostCountryAllowedCache(),
-                &mut Vec::from(by_country_internet2[i as usize].get_value()),
-                client_country.to_string(),
-            );
-
-            if !hosts.is_empty() {
-                i2_results = hosts;
-                mirrors_found += i2_results.len();
-                header.push_str("Using Internet2 ");
-                if found_via.is_empty() {
-                    found_via = String::from("I2");
-                }
-            }
-        }
-    }
-
-    info!("mirrors_found after Internet2 {:#?}", mirrors_found);
-
     let mut country_results: Vec<i64> = Vec::new();
     let mut continent_results: Vec<i64> = Vec::new();
     // If the user requested only mirrors for a certain country, this makes
@@ -753,7 +723,6 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         }
 
         actual_hosts.append(&mut asn_results.clone());
-        actual_hosts.append(&mut i2_results.clone());
         actual_hosts.append(&mut country_results.clone());
         actual_hosts.append(&mut geoip_results.clone());
         actual_hosts.append(&mut continent_results.clone());
@@ -819,8 +788,6 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
     // Just shuffle
     asn_results.shuffle(&mut thread_rng());
     all_hosts.append(&mut asn_results);
-    i2_results.shuffle(&mut thread_rng());
-    all_hosts.append(&mut i2_results);
 
     {
         let hbc = &p.mirrorlist.get_HostBandwidthCache();
@@ -1156,7 +1123,6 @@ async fn main() {
     let mut minimum: usize = 5;
     let mut geoip2_db = String::from("/usr/share/GeoIP/GeoLite2-Country.mmdb");
     let mut cache_file = String::from("/var/lib/mirrormanager/mirrorlist_cache.proto");
-    let mut i2_netblocks = String::from("/var/lib/mirrormanager/i2_netblocks.txt");
     let mut global_netblocks = String::from("/var/lib/mirrormanager/global_netblocks.txt");
     let mut cccsv = String::from("/var/lib/mirrormanager/country_continent.csv");
     let mut logfile = String::from("/var/log/mirrormanager/mirrorlist.log");
@@ -1194,7 +1160,7 @@ async fn main() {
     opts.optmulti(
         "i",
         "internet2_netblocks",
-        &format!("internet2 netblocks file location ({})", i2_netblocks),
+        "internet2 netblocks file location (deprecated - unused)",
         "CACHE",
     );
     opts.optmulti(
@@ -1259,10 +1225,6 @@ async fn main() {
         cache_file = matches.opt_strs("cache")[matches.opt_count("cache") - 1].to_string();
     }
 
-    if matches.opt_present("i") {
-        i2_netblocks = matches.opt_strs("i")[matches.opt_count("i") - 1].to_string();
-    }
-
     if matches.opt_present("g") {
         global_netblocks = matches.opt_strs("g")[matches.opt_count("g") - 1].to_string();
     }
@@ -1318,16 +1280,9 @@ async fn main() {
 
     info!("Loading global netblocks");
     let asn_cache = Arc::new(create_ip_tree(&global_netblocks));
-    info!("Loading I2 netblocks");
-    let i2_cache = Arc::new(create_ip_tree(&i2_netblocks));
 
     if asn_cache.0.is_empty() {
         error!("Creating ASN cache failed. Exiting!");
-        process::exit(1);
-    }
-
-    if i2_cache.0.is_empty() {
-        error!("Creating Internet2 cache failed. Exiting!");
         process::exit(1);
     }
 
@@ -1349,7 +1304,6 @@ async fn main() {
         let remote_addr = socket.remote_addr();
         let val = mirrorlist.clone();
         let asn = asn_cache.clone();
-        let i2 = i2_cache.clone();
         let geoip2 = geoip_reader.clone();
         let cc = cc_redirect.clone();
         let lf = log_file.clone();
@@ -1361,7 +1315,6 @@ async fn main() {
                         mirrorlist: &val,
                         remote: &remote_addr.ip(),
                         asn_cache: &asn,
-                        i2_cache: &i2,
                         geoip: &geoip2,
                         cc: &cc,
                         log_file: &lf,
