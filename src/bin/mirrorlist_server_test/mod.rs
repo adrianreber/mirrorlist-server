@@ -174,7 +174,6 @@ fn do_mirrorlist_test() {
         mirrorlist: &mirrorlist.clone(),
         remote: &remote,
         asn_cache: &asn_cache,
-        i2_cache: &asn_cache,
         geoip: &geoip_reader,
         cc: &cc,
         log_file: &log_file,
