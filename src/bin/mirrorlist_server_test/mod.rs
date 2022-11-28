@@ -1,5 +1,5 @@
 use super::*;
-use crate::lib::protos::mirrormanager::{
+use crate::common::protos::mirrormanager::{
     FileDetailsCacheDirectoryType, FileDetailsCacheFilesType, IntRepeatedIntMap,
 };
 use hyper::body;
