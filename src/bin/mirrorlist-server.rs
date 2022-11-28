@@ -1,7 +1,16 @@
 #![deny(warnings)]
 
-pub mod lib;
+pub mod common;
 
+use common::functions::{
+    find_in_file_details_cache_directory_cache, find_in_int_int_map, find_in_int_repeated_int_map,
+    find_in_int_repeated_string_map, find_in_int_string_map, find_in_mirrorlist_cache,
+    find_in_string_bool_map, find_in_string_repeated_int_map, find_in_string_string_map,
+};
+use common::protos::mirrormanager::{
+    FileDetailsType, IntIntMap, IntRepeatedStringMap, IntStringMap, MirrorList,
+    MirrorListCacheType, StringRepeatedIntMap, StringStringMap,
+};
 use getopts::Options;
 use hyper::header::{HeaderValue, CONTENT_TYPE, LOCATION};
 use hyper::server::conn::AddrStream;
@@ -9,15 +18,6 @@ use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, StatusCode};
 use ipnet::IpNet;
 use itertools::Itertools;
-use lib::common::{
-    find_in_file_details_cache_directory_cache, find_in_int_int_map, find_in_int_repeated_int_map,
-    find_in_int_repeated_string_map, find_in_int_string_map, find_in_mirrorlist_cache,
-    find_in_string_bool_map, find_in_string_repeated_int_map, find_in_string_string_map,
-};
-use lib::protos::mirrormanager::{
-    FileDetailsType, IntIntMap, IntRepeatedStringMap, IntStringMap, MirrorList,
-    MirrorListCacheType, StringRepeatedIntMap, StringStringMap,
-};
 use log::{error, info};
 use maxminddb::{geoip2, Reader};
 use protobuf::parse_from_reader;
@@ -1248,7 +1248,7 @@ async fn main() {
     );
 
     info!("Loading protobuf input");
-    let mut file = match File::open(&Path::new(&cache_file)) {
+    let mut file = match File::open(Path::new(&cache_file)) {
         Ok(f) => f,
         Err(e) => {
             error!("Opening {} failed: {}", &cache_file, e);

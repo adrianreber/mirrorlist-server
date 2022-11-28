@@ -1,4 +1,4 @@
-use crate::lib::protos::mirrormanager::{
+use crate::common::protos::mirrormanager::{
     FileDetailsCacheDirectoryType, FileDetailsCacheFilesType, IntIntMap, IntRepeatedIntMap,
     IntRepeatedStringMap, IntStringMap, MirrorListCacheType, StringBoolMap, StringRepeatedIntMap,
     StringStringMap,

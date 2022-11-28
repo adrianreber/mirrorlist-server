@@ -6,10 +6,19 @@ extern crate dns_lookup;
 extern crate dotenv;
 extern crate indicatif;
 
+pub mod common;
 pub mod db;
-pub mod lib;
 
 use chrono::{DateTime, Utc};
+use common::functions::{
+    find_in_file_details_cache_directory_cache, find_in_file_details_cache_files_cache,
+    find_in_int_repeated_int_map, find_in_int_repeated_string_map, find_in_string_repeated_int_map,
+};
+use common::protos::mirrormanager::{
+    FileDetailsCacheDirectoryType, FileDetailsCacheFilesType, FileDetailsType, IntIntMap,
+    IntRepeatedIntMap, IntRepeatedStringMap, IntStringMap, MirrorList, MirrorListCacheType,
+    StringBoolMap, StringRepeatedIntMap, StringStringMap,
+};
 use console::style;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
@@ -18,15 +27,6 @@ use getopts::Options;
 use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
 use ipnet::{IpNet, Ipv4Net, Ipv6Net};
 use ipnetwork::IpNetwork;
-use lib::common::{
-    find_in_file_details_cache_directory_cache, find_in_file_details_cache_files_cache,
-    find_in_int_repeated_int_map, find_in_int_repeated_string_map, find_in_string_repeated_int_map,
-};
-use lib::protos::mirrormanager::{
-    FileDetailsCacheDirectoryType, FileDetailsCacheFilesType, FileDetailsType, IntIntMap,
-    IntRepeatedIntMap, IntRepeatedStringMap, IntStringMap, MirrorList, MirrorListCacheType,
-    StringBoolMap, StringRepeatedIntMap, StringStringMap,
-};
 use protobuf::error::ProtobufError;
 use protobuf::{CodedOutputStream, Message, RepeatedField};
 use std::collections::HashMap;
