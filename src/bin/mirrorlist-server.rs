@@ -1263,11 +1263,9 @@ async fn main() {
         }
     });
 
-    info!(
-        "Database creation time {} ({}) ",
-        chrono::NaiveDateTime::from_timestamp(mirrorlist.get_Time() as i64, 0),
-        &mirrorlist.get_Time()
-    );
+    if let Some(t) = chrono::NaiveDateTime::from_timestamp_opt(mirrorlist.get_Time() as i64, 0) {
+        info!("Database creation time {} ({}) ", t, &mirrorlist.get_Time());
+    }
 
     info!("Loading geoip database");
     let geoip_reader = match maxminddb::Reader::open_readfile(&geoip2_db) {
