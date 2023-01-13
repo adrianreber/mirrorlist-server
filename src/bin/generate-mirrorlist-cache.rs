@@ -420,13 +420,8 @@ fn get_hbc(hosts: &[Host]) -> RepeatedField<IntIntMap> {
 
     for h in hosts {
         let mut hb = IntIntMap::new();
-        let mut i = h.4;
-        if i < 1 {
-            i = 1;
-        } else if i > 10000 {
-            /* Allow a maximum of 10Gbit/s. */
-            i = 10000;
-        }
+        /* Allow a maximum of 10Gbit/s. */
+        let i = h.4.clamp(1, 10000);
         hb.set_key(h.0.into());
         hb.set_value(i.into());
         hbc.push(hb);
