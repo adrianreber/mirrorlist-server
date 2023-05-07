@@ -358,7 +358,7 @@ dependencies = [
  "httpdate",
  "itoa 1.0.3",
  "pin-project-lite",
- "socket2 0.4.7",
+ "socket2 0.4.9",
  "tokio",
  "tower-service",
  "tracing",
@@ -553,7 +553,7 @@ dependencies = [
  "protobuf-codegen-pure",
  "rand",
  "regex",
- "socket2 0.4.7",
+ "socket2 0.5.2",
  "tempfile",
  "tokio",
  "tracing",
@@ -817,9 +817,9 @@ checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 
 [[package]]
 name = "socket2"
-version = "0.4.7"
+version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02e2d2db9033d13a1567121ddd7a095ee144db4e1ca1b1bda3419bc0da294ebd"
+checksum = "64a4a911eed85daf18834cfaa86a79b7d266ff93ff5ba14005426219480ed662"
 dependencies = [
  "libc",
  "winapi",
@@ -907,7 +907,7 @@ dependencies = [
  "mio",
  "num_cpus",
  "pin-project-lite",
- "socket2 0.4.7",
+ "socket2 0.4.9",
  "tokio-macros",
  "windows-sys 0.42.0",
 ]
