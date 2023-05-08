@@ -140,9 +140,9 @@ dependencies = [
 
 [[package]]
 name = "dns-lookup"
-version = "2.0.0"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21f2f8dd4a231982214bcffcc2db9ddbc30e2de489ee2b72932472df106a5aed"
+checksum = "3a5e05b775571a604d4bd5fa4afb2df8cb8f8f8f18dd1d8a4ba76ce8291aaa11"
 dependencies = [
  "cfg-if 1.0.0",
  "libc",
