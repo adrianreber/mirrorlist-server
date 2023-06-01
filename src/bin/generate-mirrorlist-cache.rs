@@ -731,7 +731,7 @@ fn get_mlc(
             }
         };
         val.push((id.into(), hc.0.into()));
-        host_cat_id_hash.insert(id, hc.3);
+        host_cat_id_hash.insert(hc.0, hc.3);
     }
 
     let debug = DEBUG.load(Ordering::SeqCst);
@@ -838,7 +838,7 @@ fn get_mlc(
         let mut by_internet2: RepeatedField<StringRepeatedIntMap> = RepeatedField::new();
         let mut by_hostid: RepeatedField<IntRepeatedIntMap> = RepeatedField::new();
         for (h_id, hc_id) in &host_cat_hash[&category_id] {
-            let always_up2date: bool = host_cat_id_hash[&(*h_id as i32)];
+            let always_up2date: bool = host_cat_id_hash[&(*hc_id as i32)];
             let host = get_host(*h_id as i32, hosts);
             if !(always_up2date || hcdir_hc_id_hash.contains_key(&d.id)) {
                 continue;
