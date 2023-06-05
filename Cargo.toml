@@ -25,7 +25,7 @@ diesel = { version = "2.0.4", features = ["postgres"] }
 dotenv = "0.15.0"
 dns-lookup = "2.0.2"
 ipnetwork = "0.20.0"
-indicatif = "0.17.3"
+indicatif = "0.17.5"
 console = "0.15.7"
 tracing = "0.1.37"
 socket2 = "0.5.3"
