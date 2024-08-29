@@ -23,7 +23,7 @@ itertools = "0.13.0"
 getopts = "0.2"
 diesel = { version = "2.0.4", features = ["postgres"] }
 dotenv = "0.15.0"
-dns-lookup = "2.0.2"
+dns-lookup = "2.0.4"
 ipnetwork = "0.20.0"
 indicatif = "0.17.8"
 console = "0.15.8"
