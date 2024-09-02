@@ -185,7 +185,7 @@ checksum = "e5766087c2235fec47fafa4cfecc81e494ee679d0fd4a59887ea0919bfb0e4fc"
 dependencies = [
  "cfg-if 1.0.0",
  "libc",
- "socket2 0.5.3",
+ "socket2 0.5.7",
  "windows-sys 0.48.0",
 ]
 
@@ -419,7 +419,7 @@ dependencies = [
  "httpdate",
  "itoa 1.0.3",
  "pin-project-lite",
- "socket2 0.5.3",
+ "socket2 0.4.9",
  "tokio",
  "tower-service",
  "tracing",
@@ -640,7 +640,7 @@ dependencies = [
  "protobuf-codegen-pure",
  "rand",
  "regex",
- "socket2 0.5.3",
+ "socket2 0.5.7",
  "tempfile",
  "tokio",
  "tracing",
@@ -940,12 +940,12 @@ dependencies = [
 
 [[package]]
 name = "socket2"
-version = "0.5.3"
+version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2538b18701741680e0322a2302176d3253a35388e2e62f172f64f4f16605f877"
+checksum = "ce305eb0b4296696835b71df73eb912e0f1ffd2556a501fcede6e0c50349191c"
 dependencies = [
  "libc",
- "windows-sys 0.48.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
