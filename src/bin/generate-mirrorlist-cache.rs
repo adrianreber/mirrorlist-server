@@ -27,8 +27,7 @@ use getopts::Options;
 use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
 use ipnet::{IpNet, Ipv4Net, Ipv6Net};
 use ipnetwork::IpNetwork;
-use protobuf::error::ProtobufError;
-use protobuf::{CodedOutputStream, Message, RepeatedField};
+use protobuf::{CodedOutputStream, Message};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::env;
@@ -415,8 +414,8 @@ fn parse_ip(input: String, host: String) -> Result<Vec<IpNet>, String> {
 }
 
 /* HostBandwidthCache */
-fn get_hbc(hosts: &[Host]) -> RepeatedField<IntIntMap> {
-    let mut hbc: RepeatedField<IntIntMap> = RepeatedField::new();
+fn get_hbc(hosts: &[Host]) -> Vec<IntIntMap> {
+    let mut hbc: Vec<IntIntMap> = Vec::new();
 
     for h in hosts {
         let mut hb = IntIntMap::new();
@@ -431,8 +430,8 @@ fn get_hbc(hosts: &[Host]) -> RepeatedField<IntIntMap> {
 }
 
 /* HostMaxConnectionCache */
-fn get_hmcc(hosts: &[Host]) -> RepeatedField<IntIntMap> {
-    let mut hmcc: RepeatedField<IntIntMap> = RepeatedField::new();
+fn get_hmcc(hosts: &[Host]) -> Vec<IntIntMap> {
+    let mut hmcc: Vec<IntIntMap> = Vec::new();
 
     for h in hosts {
         let mut hmc = IntIntMap::new();
@@ -445,8 +444,8 @@ fn get_hmcc(hosts: &[Host]) -> RepeatedField<IntIntMap> {
 }
 
 /* HostCountryCache */
-fn get_hcc(hosts: &[Host]) -> RepeatedField<IntStringMap> {
-    let mut hcc: RepeatedField<IntStringMap> = RepeatedField::new();
+fn get_hcc(hosts: &[Host]) -> Vec<IntStringMap> {
+    let mut hcc: Vec<IntStringMap> = Vec::new();
 
     for h in hosts {
         let mut hc = IntStringMap::new();
@@ -462,8 +461,8 @@ fn get_hcc(hosts: &[Host]) -> RepeatedField<IntStringMap> {
 }
 
 /* HostAsnCache */
-fn get_hac(hosts: &[Host]) -> RepeatedField<IntRepeatedIntMap> {
-    let mut hac: RepeatedField<IntRepeatedIntMap> = RepeatedField::new();
+fn get_hac(hosts: &[Host]) -> Vec<IntRepeatedIntMap> {
+    let mut hac: Vec<IntRepeatedIntMap> = Vec::new();
 
     for h in hosts {
         if !h.6 {
@@ -474,13 +473,12 @@ fn get_hac(hosts: &[Host]) -> RepeatedField<IntRepeatedIntMap> {
         }
         let i = find_in_int_repeated_int_map(&hac, h.7.unwrap().into());
         if i != -1 {
-            let val = &mut hac[i as usize].mut_value();
+            let val = &mut hac[i as usize].value;
             val.push(h.0.into());
         } else {
             let mut hc = IntRepeatedIntMap::new();
             hc.set_key(h.7.unwrap().into());
-            let val = hc.mut_value();
-            val.push(h.0.into());
+            hc.value.push(h.0.into());
             hac.push(hc);
         }
     }
@@ -489,8 +487,8 @@ fn get_hac(hosts: &[Host]) -> RepeatedField<IntRepeatedIntMap> {
 }
 
 /* HostCountryAllowedCache */
-fn get_hcac(c: &mut PgConnection, hosts: &[Host]) -> RepeatedField<IntRepeatedStringMap> {
-    let mut hcac: RepeatedField<IntRepeatedStringMap> = RepeatedField::new();
+fn get_hcac(c: &mut PgConnection, hosts: &[Host]) -> Vec<IntRepeatedStringMap> {
+    let mut hcac: Vec<IntRepeatedStringMap> = Vec::new();
 
     let hcac_raw = get_host_country_allowed(c);
 
@@ -505,16 +503,15 @@ fn get_hcac(c: &mut PgConnection, hosts: &[Host]) -> RepeatedField<IntRepeatedSt
 
         let i = find_in_int_repeated_string_map(&hcac, h.0.into());
         if i != -1 {
-            let val = &mut hcac[i as usize].mut_value();
+            let val = &mut hcac[i as usize].value;
             for e in element {
                 val.push(e.to_uppercase());
             }
         } else {
             let mut hca = IntRepeatedStringMap::new();
             hca.set_key(h.0.into());
-            let val = hca.mut_value();
             for e in element {
-                val.push(e.to_uppercase());
+                hca.value.push(e.to_uppercase());
             }
             hcac.push(hca);
         }
@@ -524,8 +521,8 @@ fn get_hcac(c: &mut PgConnection, hosts: &[Host]) -> RepeatedField<IntRepeatedSt
 }
 
 /* HCUrlCache */
-fn get_hcurlc(host_category_urls: &[(i32, i32, String)]) -> RepeatedField<IntStringMap> {
-    let mut hcurl: RepeatedField<IntStringMap> = RepeatedField::new();
+fn get_hcurlc(host_category_urls: &[(i32, i32, String)]) -> Vec<IntStringMap> {
+    let mut hcurl: Vec<IntStringMap> = Vec::new();
 
     for hcu in host_category_urls {
         let mut hc_url = IntStringMap::new();
@@ -538,8 +535,8 @@ fn get_hcurlc(host_category_urls: &[(i32, i32, String)]) -> RepeatedField<IntStr
 }
 
 /* HostNetBlockCache */
-fn get_hnbc(c: &mut PgConnection, hosts: &[Host]) -> RepeatedField<StringRepeatedIntMap> {
-    let mut hnbc: RepeatedField<StringRepeatedIntMap> = RepeatedField::new();
+fn get_hnbc(c: &mut PgConnection, hosts: &[Host]) -> Vec<StringRepeatedIntMap> {
+    let mut hnbc: Vec<StringRepeatedIntMap> = Vec::new();
     let netblocks_and_hosts = get_netblocks(c);
     let debug = DEBUG.load(Ordering::SeqCst);
 
@@ -572,13 +569,12 @@ fn get_hnbc(c: &mut PgConnection, hosts: &[Host]) -> RepeatedField<StringRepeate
             for key in net {
                 let i = find_in_string_repeated_int_map(&hnbc, &key.to_string());
                 if i != -1 {
-                    let val = &mut hnbc[i as usize].mut_value();
+                    let val = &mut hnbc[i as usize].value;
                     val.push(h.0.into());
                 } else {
                     let mut netblock_cache = StringRepeatedIntMap::new();
                     netblock_cache.set_key(key.to_string());
-                    let val = netblock_cache.mut_value();
-                    val.push(h.0.into());
+                    netblock_cache.value.push(h.0.into());
                     hnbc.push(netblock_cache);
                 }
             }
@@ -594,8 +590,8 @@ fn get_ratdn(
     c: &mut PgConnection,
     directories: &[db::models::Directory],
     repositories: &[Repository],
-) -> RepeatedField<StringStringMap> {
-    let mut ratdn: RepeatedField<StringStringMap> = RepeatedField::new();
+) -> Vec<StringStringMap> {
+    let mut ratdn: Vec<StringStringMap> = Vec::new();
 
     let arches = get_arches(c);
 
@@ -653,11 +649,11 @@ fn get_mlc(
     directories: &[db::models::Directory],
     host_category_urls: &[(i32, i32, String)],
 ) -> (
-    RepeatedField<MirrorListCacheType>,
-    RepeatedField<FileDetailsCacheDirectoryType>,
+    Vec<MirrorListCacheType>,
+    Vec<FileDetailsCacheDirectoryType>,
 ) {
-    let mut mlc: RepeatedField<MirrorListCacheType> = RepeatedField::new();
-    let mut fdcdc: RepeatedField<FileDetailsCacheDirectoryType> = RepeatedField::new();
+    let mut mlc: Vec<MirrorListCacheType> = Vec::new();
+    let mut fdcdc: Vec<FileDetailsCacheDirectoryType> = Vec::new();
 
     let categories = get_categories(c);
     let host_categories = get_host_categories(c);
@@ -760,7 +756,7 @@ fn get_mlc(
                     i = find_in_file_details_cache_directory_cache(&fdcdc, &d.name);
                 }
                 let f: &mut FileDetailsCacheDirectoryType = &mut fdcdc[i as usize];
-                let fdcfc = f.mut_FileDetailsCacheFiles();
+                let fdcfc = &mut f.FileDetailsCacheFiles;
                 i = find_in_file_details_cache_files_cache(fdcfc, &fd.1);
                 if i == -1 {
                     let mut tmp = FileDetailsCacheFilesType::new();
@@ -769,7 +765,7 @@ fn get_mlc(
                     i = find_in_file_details_cache_files_cache(fdcfc, &fd.1);
                 }
                 let fdcf: &mut FileDetailsCacheFilesType = &mut fdcfc[i as usize];
-                let fdc = fdcf.mut_FileDetails();
+                let fdc = &mut fdcf.FileDetails;
                 let mut file_detail_type = FileDetailsType::new();
                 if fd.2.is_none() {
                     file_detail_type.set_TimeStamp(0);
@@ -834,9 +830,9 @@ fn get_mlc(
         };
         ml.set_Subpath(subpath);
         let mut global: Vec<i64> = Vec::new();
-        let mut by_country: RepeatedField<StringRepeatedIntMap> = RepeatedField::new();
-        let mut by_internet2: RepeatedField<StringRepeatedIntMap> = RepeatedField::new();
-        let mut by_hostid: RepeatedField<IntRepeatedIntMap> = RepeatedField::new();
+        let mut by_country: Vec<StringRepeatedIntMap> = Vec::new();
+        let mut by_internet2: Vec<StringRepeatedIntMap> = Vec::new();
+        let mut by_hostid: Vec<IntRepeatedIntMap> = Vec::new();
         for (h_id, hc_id) in &host_cat_hash[&category_id] {
             let always_up2date: bool = host_cat_id_hash[&(*hc_id as i32)];
             let host = get_host(*h_id as i32, hosts);
@@ -866,7 +862,7 @@ fn get_mlc(
                 let hcurl_ids = &hcurl_cat_url_id_hash[hc_id];
                 let mut hcurl_id = IntRepeatedIntMap::new();
                 hcurl_id.set_key(*h_id);
-                hcurl_id.set_value(hcurl_ids.to_vec());
+                hcurl_id.value = hcurl_ids.to_vec();
                 by_hostid.push(hcurl_id);
             }
 
@@ -879,12 +875,12 @@ fn get_mlc(
                 let country: String = host.clone().5.unwrap().to_string().to_uppercase();
                 let i = find_in_string_repeated_int_map(&by_internet2, &country);
                 if i != -1 {
-                    let val = &mut by_internet2[i as usize].mut_value();
+                    let val = &mut by_internet2[i as usize].value;
                     val.push(*h_id);
                 } else {
                     let mut bi = StringRepeatedIntMap::new();
                     bi.set_key(country);
-                    let val = bi.mut_value();
+                    let val = &mut bi.value;
                     val.push(*h_id);
                     by_internet2.push(bi);
                 }
@@ -904,20 +900,20 @@ fn get_mlc(
             let country: String = host.clone().5.unwrap().to_string().to_uppercase();
             let i = find_in_string_repeated_int_map(&by_country, &country);
             if i != -1 {
-                let val = &mut by_country[i as usize].mut_value();
+                let val = &mut by_country[i as usize].value;
                 val.push(*h_id);
             } else {
                 let mut bc = StringRepeatedIntMap::new();
                 bc.set_key(country);
-                let val = bc.mut_value();
+                let val = &mut bc.value;
                 val.push(*h_id);
                 by_country.push(bc);
             }
         }
-        ml.set_Global(global);
-        ml.set_ByCountry(by_country);
-        ml.set_ByCountryInternet2(by_internet2);
-        ml.set_ByHostId(by_hostid);
+        ml.Global = global;
+        ml.ByCountry = by_country;
+        ml.ByCountryInternet2 = by_internet2;
+        ml.ByHostId = by_hostid;
 
         /* Not setting OrderedMirrorList as the rust mirrorlist-server does not read it. */
 
@@ -928,8 +924,8 @@ fn get_mlc(
 }
 
 /* RepositoryRedirectCache */
-fn get_rrc(c: &mut PgConnection) -> RepeatedField<StringStringMap> {
-    let mut rrc: RepeatedField<StringStringMap> = RepeatedField::new();
+fn get_rrc(c: &mut PgConnection) -> Vec<StringStringMap> {
+    let mut rrc: Vec<StringStringMap> = Vec::new();
 
     let rrc_raw = get_repository_redirects(c);
 
@@ -946,8 +942,8 @@ fn get_rrc(c: &mut PgConnection) -> RepeatedField<StringStringMap> {
 }
 
 /* NetblockCountryCache */
-fn get_ncc(c: &mut PgConnection) -> RepeatedField<StringStringMap> {
-    let mut ncc: RepeatedField<StringStringMap> = RepeatedField::new();
+fn get_ncc(c: &mut PgConnection) -> Vec<StringStringMap> {
+    let mut ncc: Vec<StringStringMap> = Vec::new();
 
     let ncc_raw = get_netblock_countries(c);
 
@@ -962,8 +958,8 @@ fn get_ncc(c: &mut PgConnection) -> RepeatedField<StringStringMap> {
 }
 
 /* CountryContinentRedirectCache */
-fn get_ccrc(c: &mut PgConnection) -> RepeatedField<StringStringMap> {
-    let mut ccrc: RepeatedField<StringStringMap> = RepeatedField::new();
+fn get_ccrc(c: &mut PgConnection) -> Vec<StringStringMap> {
+    let mut ccrc: Vec<StringStringMap> = Vec::new();
 
     let ccrc_raw = get_country_continent_redirects(c);
 
@@ -978,8 +974,8 @@ fn get_ccrc(c: &mut PgConnection) -> RepeatedField<StringStringMap> {
 }
 
 /* DisabledRepositoryCache */
-fn get_drc(repositories: &[Repository]) -> RepeatedField<StringBoolMap> {
-    let mut drc: RepeatedField<StringBoolMap> = RepeatedField::new();
+fn get_drc(repositories: &[Repository]) -> Vec<StringBoolMap> {
+    let mut drc: Vec<StringBoolMap> = Vec::new();
 
     for r in repositories {
         let mut dr = StringBoolMap::new();
@@ -1056,82 +1052,82 @@ fn main() {
     {
         /* HostCountryAllowedCache */
         let hcac = get_hcac(connection, &hosts);
-        mirrorlist.set_HostCountryAllowedCache(hcac);
+        mirrorlist.HostCountryAllowedCache = hcac;
     }
 
     {
         /* HCUrlCache */
         let hcurls = get_hcurlc(&host_category_urls);
-        mirrorlist.set_HCUrlCache(hcurls);
+        mirrorlist.HCUrlCache = hcurls;
     }
 
     {
         /* HostNetBlockCache */
         let hnbc = get_hnbc(connection, &hosts);
-        mirrorlist.set_HostNetblockCache(hnbc);
+        mirrorlist.HostNetblockCache = hnbc;
     }
 
     {
         /* HostBandwidthCache */
         let hbc = get_hbc(&hosts);
-        mirrorlist.set_HostBandwidthCache(hbc);
+        mirrorlist.HostBandwidthCache = hbc;
     }
 
     {
         /* HostCountryCache */
         let hcc = get_hcc(&hosts);
-        mirrorlist.set_HostCountryCache(hcc);
+        mirrorlist.HostCountryCache = hcc;
     }
 
     {
         /* HostAsnCache */
         let hac = get_hac(&hosts);
-        mirrorlist.set_HostAsnCache(hac);
+        mirrorlist.HostAsnCache = hac;
     }
 
     {
         /* HostMaxConnectionCache - Not actually used. */
         let hmcc = get_hmcc(&hosts);
-        mirrorlist.set_HostMaxConnectionCache(hmcc);
+        mirrorlist.HostMaxConnectionCache = hmcc;
     }
 
     {
         /* MirrorListCache */
         let (mlc, fdc) = get_mlc(connection, &hosts, &directories, &host_category_urls);
-        mirrorlist.set_MirrorListCache(mlc);
-        mirrorlist.set_FileDetailsCache(fdc);
+        mirrorlist.MirrorListCache = mlc;
+        mirrorlist.FileDetailsCache = fdc;
     }
 
     {
         let repositories = get_repositories(connection);
         /* RepoArchToDirectoryName */
         let ratdn = get_ratdn(connection, &directories, &repositories);
-        mirrorlist.set_RepoArchToDirectoryName(ratdn);
+        mirrorlist.RepoArchToDirectoryName = ratdn;
         /* DisabledRepositoryCache */
         let drc = get_drc(&repositories);
-        mirrorlist.set_DisabledRepositoryCache(drc);
+        mirrorlist.DisabledRepositoryCache = drc;
     }
 
     {
         /* RepositoryRedirectCache */
         let rrc = get_rrc(connection);
-        mirrorlist.set_RepositoryRedirectCache(rrc);
+        mirrorlist.RepositoryRedirectCache = rrc;
     }
 
     {
         /* CountryContinentRedirectCache */
         let ccrc = get_ccrc(connection);
-        mirrorlist.set_CountryContinentRedirectCache(ccrc);
+        mirrorlist.CountryContinentRedirectCache = ccrc;
     }
 
     {
         /* NetblockCountryCache */
         let ncc = get_ncc(connection);
-        mirrorlist.set_NetblockCountryCache(ncc);
+        mirrorlist.NetblockCountryCache = ncc;
     }
 
     print_step(format!("Writing to {}", &cache_file));
-    let mut file = match File::create(&cache_file).map_err(ProtobufError::IoError) {
+    let mut file = match File::create(&cache_file) {
         Ok(file) => file,
         _ => {
             println!("Error opening file {}", &cache_file);

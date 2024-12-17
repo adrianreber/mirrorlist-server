@@ -218,20 +218,20 @@ fn get_mlc_test_empty_topdir() {
     let (mlc, fdc) = get_mlc(&mut c, &hosts, &directories, &host_category_urls);
 
     assert_eq!(fdc.len(), 1);
-    assert_eq!(fdc[0].get_directory(), "directory/repodata".to_string());
-    assert_eq!(fdc[0].get_FileDetailsCacheFiles().len(), 1);
-    let fdcf = &fdc[0].get_FileDetailsCacheFiles()[0];
-    assert_eq!(fdcf.get_filename(), "repomd.xml".to_string());
-    let fdcfd = fdcf.get_FileDetails();
+    assert_eq!(fdc[0].directory(), "directory/repodata".to_string());
+    assert_eq!(fdc[0].FileDetailsCacheFiles.len(), 1);
+    let fdcf = &fdc[0].FileDetailsCacheFiles[0];
+    assert_eq!(fdcf.filename.clone().unwrap(), "repomd.xml".to_string());
+    let fdcfd = fdcf.FileDetails.clone();
     assert_eq!(fdcfd.len(), 1);
-    assert_eq!(fdcfd[0].get_Size(), 177);
+    assert_eq!(fdcfd[0].Size(), 177);
 
     assert_eq!(mlc.len(), 1);
-    assert_eq!(mlc[0].get_Subpath(), "directory/repodata".to_string());
-    assert_eq!(mlc[0].get_directory(), "directory/repodata".to_string());
-    assert_eq!(mlc[0].get_Global()[0], 56);
-    assert_eq!(mlc[0].get_ByCountry()[0].get_key(), "UQ");
-    assert_eq!(mlc[0].get_ByCountry()[0].get_value()[0], 56);
+    assert_eq!(mlc[0].Subpath(), "directory/repodata".to_string());
+    assert_eq!(mlc[0].directory(), "directory/repodata".to_string());
+    assert_eq!(mlc[0].Global[0], 56);
+    assert_eq!(mlc[0].ByCountry[0].key.clone().unwrap(), "UQ");
+    assert_eq!(mlc[0].ByCountry[0].value[0], 56);
 }
 
 #[test]
@@ -259,23 +259,23 @@ fn get_mlc_test_non_empty_topdir() {
 
     assert_eq!(fdc.len(), 1);
     assert_eq!(
-        fdc[0].get_directory(),
+        fdc[0].directory(),
         "test/topdir/directory/repodata".to_string()
     );
-    assert_eq!(fdc[0].get_FileDetailsCacheFiles().len(), 1);
-    let fdcf = &fdc[0].get_FileDetailsCacheFiles()[0];
-    assert_eq!(fdcf.get_filename(), "repomd.xml".to_string());
-    let fdcfd = fdcf.get_FileDetails();
+    assert_eq!(fdc[0].FileDetailsCacheFiles.len(), 1);
+    let fdcf = &fdc[0].FileDetailsCacheFiles[0];
+    assert_eq!(fdcf.filename.clone().unwrap(), "repomd.xml".to_string());
+    let fdcfd = fdcf.FileDetails.clone();
     assert_eq!(fdcfd.len(), 1);
-    assert_eq!(fdcfd[0].get_Size(), 177);
+    assert_eq!(fdcfd[0].Size(), 177);
 
     assert_eq!(mlc.len(), 1);
     assert_eq!(
-        mlc[0].get_directory(),
+        mlc[0].directory(),
         "test/topdir/directory/repodata".to_string()
     );
-    assert_eq!(mlc[0].get_Subpath(), "directory/repodata".to_string());
-    assert_eq!(mlc[0].get_Global()[0], 56);
-    assert_eq!(mlc[0].get_ByCountry()[0].get_key(), "UQ");
-    assert_eq!(mlc[0].get_ByCountry()[0].get_value()[0], 56);
+    assert_eq!(mlc[0].Subpath(), "directory/repodata".to_string());
+    assert_eq!(mlc[0].Global[0], 56);
+    assert_eq!(mlc[0].ByCountry[0].key.clone().unwrap(), "UQ");
+    assert_eq!(mlc[0].ByCountry[0].value[0], 56);
 }

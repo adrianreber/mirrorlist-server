@@ -1,10 +1,9 @@
-extern crate protobuf_codegen_pure;
+extern crate protobuf_codegen;
 
 fn main() {
-    protobuf_codegen_pure::Codegen::new()
+    protobuf_codegen::Codegen::new()
         .out_dir("src/bin/common/protos")
         .inputs(["protos/mirrormanager.proto"])
         .include("protos")
-        .run()
-        .expect("Codegen failed.");
+        .run_from_script();
 }

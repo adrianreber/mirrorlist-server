@@ -3,7 +3,6 @@ use crate::common::protos::mirrormanager::{
     FileDetailsCacheDirectoryType, FileDetailsCacheFilesType, IntRepeatedIntMap,
 };
 use hyper::body;
-use protobuf::RepeatedField;
 use tempfile::tempdir;
 use tokio::runtime::Runtime;
 
@@ -81,47 +80,47 @@ pub async fn read_response_body(res: Response<Body>) -> Result<String, hyper::Er
 #[test]
 fn do_mirrorlist_test() {
     let mut mirrorlist = MirrorList::new();
-    let mut mlc: RepeatedField<MirrorListCacheType> = RepeatedField::new();
+    let mut mlc: Vec<MirrorListCacheType> = Vec::new();
     let mut ml1 = MirrorListCacheType::new();
     ml1.set_directory("directory/level/three".to_string());
     let mut ml2 = MirrorListCacheType::new();
     ml2.set_directory("directory/level/three/repodata".to_string());
 
     let global: Vec<i64> = vec![1, 42, 100];
-    ml1.set_Global(global.clone());
-    ml2.set_Global(global);
+    ml1.Global = global.clone();
+    ml2.Global = global;
 
-    let mut by_hostid: RepeatedField<IntRepeatedIntMap> = RepeatedField::new();
+    let mut by_hostid: Vec<IntRepeatedIntMap> = Vec::new();
     let mut hcurl_id = IntRepeatedIntMap::new();
-    hcurl_id.set_key(42);
-    hcurl_id.set_value(vec![421, 422, 423]);
+    hcurl_id.key = Some(42);
+    hcurl_id.value = vec![421, 422, 423];
     by_hostid.push(hcurl_id);
 
     hcurl_id = IntRepeatedIntMap::new();
-    hcurl_id.set_key(1);
-    hcurl_id.set_value(vec![11, 12, 13]);
+    hcurl_id.key = Some(1);
+    hcurl_id.value = vec![11, 12, 13];
     by_hostid.push(hcurl_id);
 
     hcurl_id = IntRepeatedIntMap::new();
-    hcurl_id.set_key(100);
-    hcurl_id.set_value(vec![1001, 1002, 1003]);
+    hcurl_id.key = Some(100);
+    hcurl_id.value = vec![1001, 1002, 1003];
     by_hostid.push(hcurl_id);
 
-    ml1.set_ByHostId(by_hostid.clone());
-    ml2.set_ByHostId(by_hostid);
+    ml1.ByHostId = by_hostid.clone();
+    ml2.ByHostId = by_hostid;
 
-    let mut by_country: RepeatedField<StringRepeatedIntMap> = RepeatedField::new();
+    let mut by_country: Vec<StringRepeatedIntMap> = Vec::new();
     let mut bc = StringRepeatedIntMap::new();
-    bc.set_key("SE".to_string());
-    bc.set_value(vec![42]);
+    bc.key = Some("SE".to_string());
+    bc.value = vec![42];
     by_country.push(bc);
-    ml1.set_ByCountry(by_country.clone());
-    ml2.set_ByCountry(by_country);
+    ml1.ByCountry = by_country.clone();
+    ml2.ByCountry = by_country;
 
     mlc.push(ml1);
-    mirrorlist.set_MirrorListCache(mlc.clone());
+    mirrorlist.MirrorListCache = mlc.clone();
 
-    let mut hbc: RepeatedField<IntIntMap> = RepeatedField::new();
+    let mut hbc: Vec<IntIntMap> = Vec::new();
     let mut hb = IntIntMap::new();
     hb.set_key(1);
     hb.set_value(100);
@@ -135,9 +134,9 @@ fn do_mirrorlist_test() {
     hb.set_value(1000);
     hbc.push(hb);
 
-    mirrorlist.set_HostBandwidthCache(hbc);
+    mirrorlist.HostBandwidthCache = hbc;
 
-    let mut hcurl: RepeatedField<IntStringMap> = RepeatedField::new();
+    let mut hcurl: Vec<IntStringMap> = Vec::new();
     let vec = vec![11, 12, 13, 1001, 1002, 1003, 421, 422, 423];
     for id in vec {
         let mut hc_url = IntStringMap::new();
@@ -145,7 +144,7 @@ fn do_mirrorlist_test() {
         hc_url.set_value(format!("http://hcurl{}/test-{}", id, id));
         hcurl.push(hc_url);
     }
-    mirrorlist.set_HCUrlCache(hcurl);
+    mirrorlist.HCUrlCache = hcurl;
 
     let mut request = Request::new(Body::empty());
 
@@ -300,9 +299,8 @@ fn do_mirrorlist_test() {
 
     repo.set_key("repo-name+arch-name".to_string());
     repo.set_value("directory/level/three".to_string());
-    let mut ratdn: RepeatedField<StringStringMap> = RepeatedField::new();
-    ratdn.push(repo);
-    mirrorlist.set_RepoArchToDirectoryName(ratdn);
+    let ratdn: Vec<StringStringMap> = vec![repo];
+    mirrorlist.RepoArchToDirectoryName = ratdn;
 
     request = Request::new(Body::empty());
     *request.uri_mut() = "/metalink?repo=repo-name&arch=arch-name&ip=89.160.20.113"
@@ -319,7 +317,7 @@ fn do_mirrorlist_test() {
         .contains("mirrorlist cache index out of range, you broke it!"));
 
     mlc.push(ml2);
-    mirrorlist.set_MirrorListCache(mlc);
+    mirrorlist.MirrorListCache = mlc;
 
     request = Request::new(Body::empty());
     *request.uri_mut() = "/metalink?repo=repo-name&arch=arch-name&ip=89.160.20.113"
@@ -335,26 +333,26 @@ fn do_mirrorlist_test() {
         .unwrap()
         .contains("repomd.xml not found or has not metalink"));
 
-    let mut fdcdc: RepeatedField<FileDetailsCacheDirectoryType> = RepeatedField::new();
+    let mut fdcdc: Vec<FileDetailsCacheDirectoryType> = Vec::new();
     let mut fdcd = FileDetailsCacheDirectoryType::new();
     fdcd.set_directory("directory/level/three/repodata".to_string());
     fdcdc.push(fdcd);
 
     let f: &mut FileDetailsCacheDirectoryType = &mut fdcdc[0];
-    let fdcfc = f.mut_FileDetailsCacheFiles();
+    let fdcfc = &mut f.FileDetailsCacheFiles;
     let mut fdcf = FileDetailsCacheFilesType::new();
     fdcf.set_filename("repomd.xml".to_string());
     fdcfc.push(fdcf);
 
     let fdcf: &mut FileDetailsCacheFilesType = &mut fdcfc[0];
-    let fdc = fdcf.mut_FileDetails();
+    let fdc = &mut fdcf.FileDetails;
     let mut file_detail_type = FileDetailsType::new();
     file_detail_type.set_Size(3);
     file_detail_type.set_TimeStamp(17);
     file_detail_type.set_MD5("MD5555".to_string());
     fdc.push(file_detail_type);
 
-    mirrorlist.set_FileDetailsCache(fdcdc);
+    mirrorlist.FileDetailsCache = fdcdc;
 
     request = Request::new(Body::empty());
     *request.uri_mut() = "/metalink?repo=repo-name&arch=arch-name&ip=89.160.20.113"
