@@ -21,7 +21,7 @@ maxminddb = "0.24.0"
 rand = "0.8"
 itertools = "0.13.0"
 getopts = "0.2"
-diesel = { version = "2.0.4", features = ["postgres"] }
+diesel = { version = "2.1.6", features = ["postgres"] }
 dotenv = "0.15.0"
 dns-lookup = "2.0.4"
 ipnetwork = "0.20.0"
