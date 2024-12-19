@@ -1262,7 +1262,7 @@ async fn main() {
         }
     });
 
-    if let Some(t) = chrono::NaiveDateTime::from_timestamp_opt(mirrorlist.Time.unwrap() as i64, 0) {
+    if let Some(t) = chrono::DateTime::from_timestamp(mirrorlist.Time.unwrap() as i64, 0) {
         info!("Database creation time {} ({}) ", t, &mirrorlist.Time.unwrap());
     }
 
