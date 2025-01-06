@@ -646,6 +646,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "ipnetwork"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f7d1e51dceb94e362a3bd4849c5b8b44989faf8b66998fc0a44ff11923393c9"
+
+[[package]]
 name = "is-terminal"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -723,7 +729,7 @@ version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6087e5d8ea14861bb7c7f573afbc7be3798d3ef0fae87ec4fd9a4de9a127c3c"
 dependencies = [
- "ipnetwork",
+ "ipnetwork 0.20.0",
  "log",
  "memchr",
  "serde",
@@ -768,7 +774,7 @@ dependencies = [
  "hyper",
  "indicatif",
  "ipnet",
- "ipnetwork",
+ "ipnetwork 0.21.0",
  "itertools",
  "log",
  "maxminddb",

@@ -24,7 +24,7 @@ getopts = "0.2"
 diesel = { version = "2.0.4", features = ["postgres"] }
 dotenv = "0.15.0"
 dns-lookup = "2.0.4"
-ipnetwork = "0.20.0"
+ipnetwork = "0.21.0"
 indicatif = "0.17.9"
 console = "0.15.10"
 tracing = "0.1.41"
