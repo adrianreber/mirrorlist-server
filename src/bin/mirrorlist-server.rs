@@ -176,7 +176,7 @@ fn do_countrylist(
             // Add all hostids to the result
             hosts.push(*host);
         }
-        let _ = write!(header, "country = {} ", country);
+        let _ = write!(header, "country = {country} ");
     }
     header
 }
@@ -281,7 +281,7 @@ fn trim_to_preferred_protocols(
         count = 0;
         for hcurl in hcurls {
             for p in try_protocols {
-                let prot = String::from(&format!("{}:", p));
+                let prot = String::from(&format!("{p}:"));
                 if hcurl.starts_with(&prot) {
                     url.push(String::from(&hcurl.to_string()));
                     count += 1;
@@ -424,13 +424,13 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
             repo = get_param(&query_params, "repo");
         }
         let arch = get_param(&query_params, "arch");
-        let _ = write!(header, "# repo = {} arch = {} ", repo, arch);
+        let _ = write!(header, "# repo = {repo} arch = {arch} ");
         if find_in_string_bool_map(&p.mirrorlist.DisabledRepositoryCache, &repo) {
             return http_response(metalink, "repo disabled".to_string(), StatusCode::OK);
         }
         let key = find_in_string_string_map(
             &p.mirrorlist.RepoArchToDirectoryName,
-            &format!("{}+{}", repo, arch),
+            &format!("{repo}+{arch}"),
         );
         if key.is_empty() {
             let mut repos: Vec<String> = Vec::new();
@@ -559,10 +559,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         let asn = find_in_ip_tree(p.asn_cache, &client_ip);
         if !asn.1.is_empty() {
             let host_asn_cache = &p.mirrorlist.HostAsnCache;
-            let asn_number = match asn.1.parse::<i64>() {
-                Ok(x) => x,
-                _ => -1,
-            };
+              let asn_number = asn.1.parse::<i64>().unwrap_or(-1);
             let i = find_in_int_repeated_int_map(host_asn_cache, asn_number);
             if i != -1 {
                 for id in &host_asn_cache[i as usize].value {
@@ -937,7 +934,7 @@ fn do_metalink(
     if fdcdc_index == -1 {
         return (
             StatusCode::NOT_FOUND,
-            metalink_failuredoc(format!("{}/{} not found or has not metalink", dir, file)),
+            metalink_failuredoc(format!("{dir}/{file} not found or has not metalink")),
         );
     }
     let fdcf = &mirrorlist.FileDetailsCache[fdcdc_index as usize]
@@ -952,12 +949,12 @@ fn do_metalink(
     if wrong_file || fdcf.is_empty() {
         return (
             StatusCode::NOT_FOUND,
-            metalink_failuredoc(format!("{}/{} not found or has not metalink", dir, file)),
+            metalink_failuredoc(format!("{dir}/{file} not found or has not metalink")),
         );
     }
     let mut doc = metalink_header();
     doc.push_str(" <files>\n");
-    let _ = writeln!(doc, "  <file name=\"{}\">", file);
+    let _ = writeln!(doc, "  <file name=\"{file}\">");
     let mut count = 0;
     for e in fdcf {
         if e.filename() != file {
@@ -1010,7 +1007,7 @@ fn do_metalink(
             doc += protocol[0];
             doc += "\" location=\"";
             doc += &find_in_int_string_map(&mirrorlist.HostCountryCache, *host).to_uppercase();
-            let _ = write!(doc, "\" preference=\"{}\"{}>", preference, private);
+            let _ = write!(doc, "\" preference=\"{preference}\"{private}>");
             doc += url;
             doc += "</url>\n";
         }
@@ -1110,7 +1107,7 @@ fn setup_continents(file: &str, ccrc: &[StringStringMap]) -> HashMap<String, Str
 }
 
 fn print_usage(program: &str, opts: Options) {
-    let brief = format!("Usage: {} [options]", program);
+    let brief = format!("Usage: {program} [options]");
     print!("{}", opts.usage(&brief));
 }
 
@@ -1135,25 +1132,25 @@ async fn main() {
     opts.optmulti(
         "",
         "listen",
-        &format!("IP address to listen to ({})", listen),
+        &format!("IP address to listen to ({listen})"),
         "ADDRESS",
     );
     opts.optmulti(
         "",
         "port",
-        &format!("TCP port to listen to ({})", port),
+        &format!("TCP port to listen to ({port})"),
         "PORT",
     );
     opts.optmulti(
         "m",
         "minimum",
-        &format!("minimum number of mirrors to return ({})", minimum),
+        &format!("minimum number of mirrors to return ({minimum})"),
         "NUMBER",
     );
     opts.optmulti(
         "c",
         "cache",
-        &format!("protobuf cache file location ({})", cache_file),
+        &format!("protobuf cache file location ({cache_file})"),
         "CACHE",
     );
     opts.optmulti(
@@ -1165,20 +1162,20 @@ async fn main() {
     opts.optmulti(
         "g",
         "global_netblocks",
-        &format!("global netblocks file location ({})", global_netblocks),
+        &format!("global netblocks file location ({global_netblocks})"),
         "CACHE",
     );
-    opts.optmulti("l", "log", &format!("logfile ({})", logfile), "LOG");
+    opts.optmulti("l", "log", &format!("logfile ({logfile})"), "LOG");
     opts.optmulti(
         "",
         "cccsv",
-        &format!("country continent csv file ({})", cccsv),
+        &format!("country continent csv file ({cccsv})"),
         "CSV",
     );
     opts.optmulti(
         "",
         "geoip",
-        &format!("GeoIP country mmdb ({})", geoip2_db),
+        &format!("GeoIP country mmdb ({geoip2_db})"),
         "MMDB",
     );
     let matches = match opts.parse(&args[1..]) {
@@ -1194,8 +1191,7 @@ async fn main() {
             Ok(mi) => mi,
             _ => {
                 println!(
-                    "Error parsing minimum number of mirrors. Defaulting to {}",
-                    minimum
+                    "Error parsing minimum number of mirrors. Defaulting to {minimum}"
                 );
                 minimum
             }
@@ -1206,7 +1202,7 @@ async fn main() {
         port = match matches.opt_strs("port")[matches.opt_count("port") - 1].parse::<usize>() {
             Ok(po) => po,
             _ => {
-                println!("Error parsing port. Defaulting to {}", port);
+                println!("Error parsing port. Defaulting to {port}");
                 port
             }
         };
@@ -1294,7 +1290,7 @@ async fn main() {
         process::exit(1);
     }
 
-    let addr = String::from(&format!("{}:{}", listen, port));
+    let addr = String::from(&format!("{listen}:{port}"));
     let addr: SocketAddr = addr.parse().expect("Unable to parse address!");
 
     let new_service = make_service_fn(move |socket: &AddrStream| {
@@ -1325,10 +1321,10 @@ async fn main() {
 
     let server = Server::bind(&addr).serve(new_service);
 
-    println!("Listening on http://{}", addr);
+    println!("Listening on http://{addr}");
 
     if let Err(err) = server.await {
-        eprintln!("server error: {}", err);
+        eprintln!("server error: {err}");
     }
 }
 

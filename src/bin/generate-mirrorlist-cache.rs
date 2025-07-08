@@ -55,7 +55,7 @@ fn pg_conn(conf: String) -> PgConnection {
     let db_url = match env::var("DB_URL") {
         Ok(d) => d,
         _ => {
-            println!("Error reading configuration file {}", conf);
+            println!("Error reading configuration file {conf}");
             process::exit(1);
         }
     };
@@ -71,7 +71,7 @@ fn print_step(msg: String) {
     }
     println!(
         " Step {}: {}",
-        style(format!("[{}/{}]", s, STEPS)).bold().dim(),
+        style(format!("[{s}/{STEPS}]")).bold().dim(),
         msg
     );
 }
@@ -360,7 +360,7 @@ fn parse_ip(input: String, host: String) -> Result<Vec<IpNet>, String> {
                         let ips = lookup_host(&ip_string);
                         if ips.is_err() {
                             if DEBUG.load(Ordering::SeqCst) == 1 {
-                                println!("DNS resolve error {} for host {}\n", ip_string, host);
+                                println!("DNS resolve error {ip_string} for host {host}\n");
                             }
                             return Err("Parse Error".to_string());
                         }
@@ -990,7 +990,7 @@ fn get_drc(repositories: &[Repository]) -> Vec<StringBoolMap> {
 }
 
 fn print_usage(program: &str, opts: Options) {
-    let brief = format!("Usage: {} [options]", program);
+    let brief = format!("Usage: {program} [options]");
     print!("{}", opts.usage(&brief));
 }
 
@@ -1004,14 +1004,14 @@ fn main() {
     opts.optmulti(
         "o",
         "outfile",
-        &format!("protobuf cache file location ({})", cache_file),
+        &format!("protobuf cache file location ({cache_file})"),
         "CACHE",
     );
 
     opts.optmulti(
         "c",
         "config",
-        &format!("configuration file ({})", config_file),
+        &format!("configuration file ({config_file})"),
         "CONFIG",
     );
 
