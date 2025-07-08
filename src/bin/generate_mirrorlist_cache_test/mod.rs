@@ -88,7 +88,7 @@ fn setup_db(c: &mut PgConnection, cat_id: i32) -> Result<usize, diesel::result::
         directory::dsl::id.eq(744),
         directory::dsl::name.eq(match topdir.is_empty() {
             true => "directory/repodata".to_string(),
-            false => format!("{}/directory/repodata", topdir),
+            false => format!("{topdir}/directory/repodata"),
         }),
     ));
     insert6.execute(c)?;
@@ -142,7 +142,7 @@ fn get_repositories_test() {
     let mut c = match get_db_connection() {
         Ok(c) => c,
         Err(e) => {
-            println!("Database connection failed {}", e);
+            println!("Database connection failed {e}");
             panic!();
         }
     };
@@ -150,7 +150,7 @@ fn get_repositories_test() {
     let r = setup_db(&mut c, 4);
 
     if r.is_err() {
-        println!("{:#?}", r);
+        println!("{r:#?}");
     }
     assert!(r.is_ok());
 
@@ -168,7 +168,7 @@ fn get_host_categories_test() {
     let mut c = match get_db_connection() {
         Ok(c) => c,
         Err(e) => {
-            println!("Database connection failed {}", e);
+            println!("Database connection failed {e}");
             panic!();
         }
     };
@@ -176,7 +176,7 @@ fn get_host_categories_test() {
     let r = setup_db(&mut c, 4);
 
     if r.is_err() {
-        println!("{:#?}", r);
+        println!("{r:#?}");
     }
     assert!(r.is_ok());
 
@@ -199,7 +199,7 @@ fn get_mlc_test_empty_topdir() {
     let mut c = match get_db_connection() {
         Ok(c) => c,
         Err(e) => {
-            println!("Database connection failed {}", e);
+            println!("Database connection failed {e}");
             panic!();
         }
     };
@@ -207,7 +207,7 @@ fn get_mlc_test_empty_topdir() {
     let r = setup_db(&mut c, 4);
 
     if r.is_err() {
-        println!("{:#?}", r);
+        println!("{r:#?}");
     }
     assert!(r.is_ok());
 
@@ -239,7 +239,7 @@ fn get_mlc_test_non_empty_topdir() {
     let mut c = match get_db_connection() {
         Ok(c) => c,
         Err(e) => {
-            println!("Database connection failed {}", e);
+            println!("Database connection failed {e}");
             panic!();
         }
     };
@@ -247,7 +247,7 @@ fn get_mlc_test_non_empty_topdir() {
     let r = setup_db(&mut c, 5);
 
     if r.is_err() {
-        println!("{:#?}", r);
+        println!("{r:#?}");
     }
     assert!(r.is_ok());
 

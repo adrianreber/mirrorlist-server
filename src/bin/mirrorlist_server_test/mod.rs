@@ -141,7 +141,7 @@ fn do_mirrorlist_test() {
     for id in vec {
         let mut hc_url = IntStringMap::new();
         hc_url.set_key(id.into());
-        hc_url.set_value(format!("http://hcurl{}/test-{}", id, id));
+        hc_url.set_value(format!("http://hcurl{id}/test-{id}"));
         hcurl.push(hc_url);
     }
     mirrorlist.HCUrlCache = hcurl;
@@ -360,7 +360,7 @@ fn do_mirrorlist_test() {
         .unwrap();
     p.mirrorlist = &mirrorlist;
     response = do_mirrorlist(request, &mut p);
-    println!("{:#?}", response);
+    println!("{response:#?}");
     assert_eq!(response.status(), 200);
     let response_body = Runtime::new()
         .unwrap()
