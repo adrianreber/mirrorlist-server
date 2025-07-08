@@ -32,9 +32,7 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Run clippy
-      run: |
-        cargo clippy --verbose
-        cargo clippy --tests --verbose
+      run: cargo clippy --all-targets --verbose
     - name: Prepare database
       run: |
         sudo apt-get install -y postgresql-client
