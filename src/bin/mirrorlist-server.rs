@@ -1289,7 +1289,7 @@ async fn main() {
         &mirrorlist.CountryContinentRedirectCache,
     ));
 
-    if cc_redirect.len() == 0 {
+    if cc_redirect.is_empty() {
         error!("Parsing country continent data failed. Exiting!");
         process::exit(1);
     }
