@@ -586,12 +586,12 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         // this was more complicated as it was doing IPv6, Teredo
         // and IPv4 separately. Not necessary with GeoIP2.
         client_country = match p.geoip.lookup::<geoip2::Country>(client_ip) {
-            Ok(c) => match c.country {
+            Ok(Some(country)) => match country.country {
                 Some(co) => match co.iso_code {
                     Some(iso) => iso.to_string(),
-                    _ => "N/A".to_string(),
+                    None => "N/A".to_string(),
                 },
-                _ => "N/A".to_string(),
+                None => "N/A".to_string(),
             },
             _ => "N/A".to_string(),
         };
