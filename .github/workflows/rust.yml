@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ master ]
 
+permissions:
+  contents: read
+
 jobs:
   build:
 
@@ -26,16 +29,18 @@ jobs:
           - 5432:5432
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install dependencies
-      run: sudo apt-get install -y protobuf-compiler
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y protobuf-compiler postgresql-client
     - name: Build
       run: cargo build --verbose
     - name: Run clippy
-      run: cargo clippy --all-targets --verbose
+      run: cargo clippy --all-targets --verbose -- -D warnings
+    - name: Check formatting
+      run: cargo fmt --check
     - name: Prepare database
-      run: |
-        sudo apt-get install -y postgresql-client
-        PGPASSWORD=test_password psql -h localhost -U test_user test_db < testdata/database-setup.sql
+      run: PGPASSWORD=test_password psql -h localhost -U test_user test_db < testdata/database-setup.sql
     - name: Run tests
       run: TEST_DATABASE_URL="postgresql://test_user:test_password@localhost/test_db" cargo test --verbose -- --test-threads=1
