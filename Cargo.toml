@@ -31,7 +31,7 @@ tracing = "0.1.41"
 socket2 = "0.5.8"
 
 [dependencies.tokio]
-version = "1.29.1"
+version = "1"
 features = ["macros", "rt-multi-thread"]
 
 [build-dependencies]
