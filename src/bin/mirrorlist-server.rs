@@ -112,31 +112,23 @@ fn trim_by_client_country(
     hosts: &mut Vec<i64>,
     client_country: String,
 ) -> Vec<i64> {
-    for host in hosts.clone() {
+    hosts.retain(|&host| {
         // Check if this host is part of host_country_allowed_cache
         let index = find_in_int_repeated_string_map(hcac, host);
         if index == -1 {
-            // Host is not part of host_country_allowed_cache
-            continue;
+            // Host is not part of host_country_allowed_cache, keep it
+            return true;
         }
-        let mut found = false;
+        // Check if the client country is part of host_country_allowed_cache[host]
         for country in &hcac[index as usize].value {
-            // Check if the client country is part of host_country_allowed_cache[host]
             if country == &client_country {
                 // Yes it is. We do not need to remove this host from the list
-                found = true;
+                return true;
             }
         }
-        if !found {
-            // Looks like this host should be removed from the list of valid hosts
-            for (count, inner_loop_host) in hosts.clone().iter().enumerate() {
-                if inner_loop_host == &host {
-                    hosts.remove(count);
-                    break;
-                }
-            }
-        }
-    }
+        // Client country not found, remove this host
+        false
+    });
     hosts.to_vec()
 }
 
@@ -197,12 +189,12 @@ fn weighted_shuffle(hosts: &mut Vec<i64>, hbc: &[IntIntMap], results: &mut Vec<i
         return;
     }
     let mut weights: Vec<i64> = Vec::new();
-    for e in hosts.clone() {
+    for &e in hosts.iter() {
         weights.push(find_in_int_int_map(hbc, e));
     }
     let mut rng = &mut rand::rng();
     let mut dist = WeightedIndex::new(&weights).unwrap();
-    for _ in hosts.clone() {
+    while !hosts.is_empty() {
         let host = hosts[dist.sample(&mut rng)];
         let index = hosts.iter().position(|&r| r == host).unwrap();
         results.push(host);
@@ -218,7 +210,7 @@ fn append_path(
     all_hosts: &[i64],
     cache: &MirrorListCacheType,
     hcurl_cache: &[IntStringMap],
-    file: String,
+    file: &str,
     path_is_dir: bool,
 ) -> Vec<(i64, Vec<String>)> {
     let mut result: Vec<(i64, Vec<String>)> = Vec::new();
@@ -244,7 +236,7 @@ fn append_path(
                 if !s.ends_with('/') {
                     s.push('/');
                 }
-                s.push_str(&file);
+                s.push_str(file);
             }
             hcurls.push(s);
         }
@@ -260,7 +252,7 @@ fn trim_to_preferred_protocols(
 ) {
     let mut result: Vec<(i64, Vec<String>)> = Vec::new();
     let mut count: usize;
-    for (host, hcurls) in hosts_and_urls.clone() {
+    for (host, hcurls) in std::mem::take(hosts_and_urls) {
         let mut url: Vec<String> = Vec::new();
         count = 0;
         for hcurl in hcurls {
@@ -498,8 +490,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
     let mut netblock_results: Vec<(String, i64)> = Vec::new();
     let mut asn_results: Vec<i64> = Vec::new();
     if requested_countries.is_empty()
-        && (!query_params.contains_key("netblock")
-            || get_param(&query_params, "netblock") == "1")
+        && (!query_params.contains_key("netblock") || get_param(&query_params, "netblock") == "1")
     {
         let hnbc = &p.mirrorlist.HostNetblockCache;
         for hnb in hnbc {
@@ -698,10 +689,10 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
             actual_hosts.push(e.1);
         }
 
-        actual_hosts.append(&mut asn_results.clone());
-        actual_hosts.append(&mut country_results.clone());
-        actual_hosts.append(&mut geoip_results.clone());
-        actual_hosts.append(&mut continent_results.clone());
+        actual_hosts.extend(&asn_results);
+        actual_hosts.extend(&country_results);
+        actual_hosts.extend(&geoip_results);
+        actual_hosts.extend(&continent_results);
 
         let actual_hosts: Vec<_> = actual_hosts.into_iter().unique().collect();
 
@@ -709,7 +700,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
             &actual_hosts,
             cache,
             &p.mirrorlist.HCUrlCache,
-            file.clone(),
+            &file,
             path_is_dir,
         );
         if query_params.contains_key("protocol") {
@@ -779,7 +770,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         &all_hosts,
         cache,
         &p.mirrorlist.HCUrlCache,
-        file.clone(),
+        &file,
         path_is_dir,
     );
 
