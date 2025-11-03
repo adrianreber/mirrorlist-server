@@ -62,22 +62,7 @@ fn metalink_failuredoc(msg: String) -> String {
 }
 
 fn get_param(params: &HashMap<&str, &str>, find: &str) -> String {
-    let mut result = String::new();
-    for param in params {
-        if param.0 == &find {
-            result.push_str(param.1);
-        }
-    }
-    result
-}
-
-fn check_for_param(params: &HashMap<&str, &str>, check: &str) -> bool {
-    for param in params {
-        if param.0 == &check {
-            return true;
-        }
-    }
-    false
+    params.get(find).copied().unwrap_or("").to_string()
 }
 
 fn find_in_netblock_country_cache(nbcc: &[StringStringMap], client_ip: &IpAddr) -> String {
@@ -127,31 +112,23 @@ fn trim_by_client_country(
     hosts: &mut Vec<i64>,
     client_country: String,
 ) -> Vec<i64> {
-    for host in hosts.clone() {
+    hosts.retain(|&host| {
         // Check if this host is part of host_country_allowed_cache
         let index = find_in_int_repeated_string_map(hcac, host);
         if index == -1 {
-            // Host is not part of host_country_allowed_cache
-            continue;
+            // Host is not part of host_country_allowed_cache, keep it
+            return true;
         }
-        let mut found = false;
+        // Check if the client country is part of host_country_allowed_cache[host]
         for country in &hcac[index as usize].value {
-            // Check if the client country is part of host_country_allowed_cache[host]
             if country == &client_country {
                 // Yes it is. We do not need to remove this host from the list
-                found = true;
+                return true;
             }
         }
-        if !found {
-            // Looks like this host should be removed from the list of valid hosts
-            for (count, inner_loop_host) in hosts.clone().iter().enumerate() {
-                if inner_loop_host == &host {
-                    hosts.remove(count);
-                    break;
-                }
-            }
-        }
-    }
+        // Client country not found, remove this host
+        false
+    });
     hosts.to_vec()
 }
 
@@ -207,17 +184,17 @@ fn get_same_continent_hosts(
     header
 }
 
-fn weigthed_shuffle(hosts: &mut Vec<i64>, hbc: &[IntIntMap], results: &mut Vec<i64>) {
+fn weighted_shuffle(hosts: &mut Vec<i64>, hbc: &[IntIntMap], results: &mut Vec<i64>) {
     if hosts.is_empty() {
         return;
     }
     let mut weights: Vec<i64> = Vec::new();
-    for e in hosts.clone() {
+    for &e in hosts.iter() {
         weights.push(find_in_int_int_map(hbc, e));
     }
     let mut rng = &mut rand::rng();
     let mut dist = WeightedIndex::new(&weights).unwrap();
-    for _ in hosts.clone() {
+    while !hosts.is_empty() {
         let host = hosts[dist.sample(&mut rng)];
         let index = hosts.iter().position(|&r| r == host).unwrap();
         results.push(host);
@@ -233,7 +210,7 @@ fn append_path(
     all_hosts: &[i64],
     cache: &MirrorListCacheType,
     hcurl_cache: &[IntStringMap],
-    file: String,
+    file: &str,
     path_is_dir: bool,
 ) -> Vec<(i64, Vec<String>)> {
     let mut result: Vec<(i64, Vec<String>)> = Vec::new();
@@ -259,7 +236,7 @@ fn append_path(
                 if !s.ends_with('/') {
                     s.push('/');
                 }
-                s.push_str(&file);
+                s.push_str(file);
             }
             hcurls.push(s);
         }
@@ -275,7 +252,7 @@ fn trim_to_preferred_protocols(
 ) {
     let mut result: Vec<(i64, Vec<String>)> = Vec::new();
     let mut count: usize;
-    for (host, hcurls) in hosts_and_urls.clone() {
+    for (host, hcurls) in std::mem::take(hosts_and_urls) {
         let mut url: Vec<String> = Vec::new();
         count = 0;
         for hcurl in hcurls {
@@ -360,8 +337,8 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         }
     }
 
-    if !((check_for_param(&query_params, "repo") && check_for_param(&query_params, "arch"))
-        || check_for_param(&query_params, "path"))
+    if !((query_params.contains_key("repo") && query_params.contains_key("arch"))
+        || query_params.contains_key("path"))
     {
         return http_response(
             metalink,
@@ -378,7 +355,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
     let cache: &MirrorListCacheType;
     let mirrorlist_caches = &p.mirrorlist.MirrorListCache;
 
-    if check_for_param(&query_params, "path") {
+    if query_params.contains_key("path") {
         let mut path = get_param(&query_params, "path");
         path = path.trim_matches('/').to_string();
         let re = Regex::new(r"/+").unwrap();
@@ -411,7 +388,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         }
     } else {
         if get_param(&query_params, "repo").contains("source") {
-            if check_for_param(&query_params, "arch") {
+            if query_params.contains_key("arch") {
                 query_params.remove(&"arch");
             }
             query_params.insert("arch", "source");
@@ -513,8 +490,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
     let mut netblock_results: Vec<(String, i64)> = Vec::new();
     let mut asn_results: Vec<i64> = Vec::new();
     if requested_countries.is_empty()
-        && (!check_for_param(&query_params, "netblock")
-            || get_param(&query_params, "netblock") == "1")
+        && (!query_params.contains_key("netblock") || get_param(&query_params, "netblock") == "1")
     {
         let hnbc = &p.mirrorlist.HostNetblockCache;
         for hnb in hnbc {
@@ -596,7 +572,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         };
     }
 
-    if check_for_param(&query_params, "repo") && check_for_param(&query_params, "arch") {
+    if query_params.contains_key("repo") && query_params.contains_key("arch") {
         let now = chrono::Utc::now();
         let log_msg = &format!(
             "IP: {}; DATE: {}; COUNTRY: {}; REPO: {}; ARCH: {}\n",
@@ -713,10 +689,10 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
             actual_hosts.push(e.1);
         }
 
-        actual_hosts.append(&mut asn_results.clone());
-        actual_hosts.append(&mut country_results.clone());
-        actual_hosts.append(&mut geoip_results.clone());
-        actual_hosts.append(&mut continent_results.clone());
+        actual_hosts.extend(&asn_results);
+        actual_hosts.extend(&country_results);
+        actual_hosts.extend(&geoip_results);
+        actual_hosts.extend(&continent_results);
 
         let actual_hosts: Vec<_> = actual_hosts.into_iter().unique().collect();
 
@@ -724,10 +700,10 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
             &actual_hosts,
             cache,
             &p.mirrorlist.HCUrlCache,
-            file.clone(),
+            &file,
             path_is_dir,
         );
-        if check_for_param(&query_params, "protocol") {
+        if query_params.contains_key("protocol") {
             let protocols = get_param(&query_params, "protocol");
             let mut try_protocols: Vec<&str> = protocols.split(',').collect();
             if !try_protocols.is_empty() {
@@ -783,10 +759,10 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
     {
         let hbc = &p.mirrorlist.HostBandwidthCache;
         // Weighted shuffle by bandwidth
-        weigthed_shuffle(&mut country_results, hbc, &mut all_hosts);
-        weigthed_shuffle(&mut geoip_results, hbc, &mut all_hosts);
-        weigthed_shuffle(&mut continent_results, hbc, &mut all_hosts);
-        weigthed_shuffle(&mut global_results, hbc, &mut all_hosts);
+        weighted_shuffle(&mut country_results, hbc, &mut all_hosts);
+        weighted_shuffle(&mut geoip_results, hbc, &mut all_hosts);
+        weighted_shuffle(&mut continent_results, hbc, &mut all_hosts);
+        weighted_shuffle(&mut global_results, hbc, &mut all_hosts);
     }
     let all_hosts: Vec<_> = all_hosts.into_iter().unique().collect();
 
@@ -794,12 +770,12 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         &all_hosts,
         cache,
         &p.mirrorlist.HCUrlCache,
-        file.clone(),
+        &file,
         path_is_dir,
     );
 
     let mut protocols_trimmed = false;
-    if check_for_param(&query_params, "protocol") {
+    if query_params.contains_key("protocol") {
         let protocols = get_param(&query_params, "protocol");
         let mut try_protocols: Vec<&str> = protocols.split(',').collect();
         if !try_protocols.is_empty() {
@@ -812,7 +788,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         protocols_trimmed = true;
     }
 
-    if check_for_param(&query_params, "time") {
+    if query_params.contains_key("time") {
         let _ = write!(
             header,
             "\n# database creation time: {}",
@@ -829,14 +805,14 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
             HeaderValue::from_static("application/metalink+xml"),
         );
     } else {
-        if check_for_param(&query_params, "redirect") {
+        if query_params.contains_key("redirect") {
             trim_to_preferred_protocols(&mut hosts_and_urls, &["https", "http"], 1);
             protocols_trimmed = true;
         }
         if !protocols_trimmed {
             trim_to_preferred_protocols(&mut hosts_and_urls, &["https", "http", "ftp"], 1);
         }
-        if check_for_param(&query_params, "redirect") {
+        if query_params.contains_key("redirect") {
             let mut redirect = String::new();
             if !hosts_and_urls.is_empty() {
                 for (_, urls) in hosts_and_urls {
@@ -891,19 +867,19 @@ fn metalink_details(fd: &FileDetailsType, indent: String) -> String {
     }
     result.push_str(&indent);
     result.push_str(" <verification>\n");
-    if fd.MD5() != "" {
+    if !fd.MD5().is_empty() {
         result.push_str(&indent);
         let _ = writeln!(result, "  <hash type=\"md5\">{}</hash>", fd.MD5());
     }
-    if fd.SHA1() != "" {
+    if !fd.SHA1().is_empty() {
         result.push_str(&indent);
         let _ = writeln!(result, "  <hash type=\"sha1\">{}</hash>", fd.SHA1());
     }
-    if fd.SHA256() != "" {
+    if !fd.SHA256().is_empty() {
         result.push_str(&indent);
         let _ = writeln!(result, "  <hash type=\"sha256\">{}</hash>", fd.SHA256());
     }
-    if fd.SHA512() != "" {
+    if !fd.SHA512().is_empty() {
         result.push_str(&indent);
         let _ = writeln!(result, "  <hash type=\"sha512\">{}</hash>", fd.SHA512());
     }
