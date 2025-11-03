@@ -891,19 +891,19 @@ fn metalink_details(fd: &FileDetailsType, indent: String) -> String {
     }
     result.push_str(&indent);
     result.push_str(" <verification>\n");
-    if fd.MD5() != "" {
+    if !fd.MD5().is_empty() {
         result.push_str(&indent);
         let _ = writeln!(result, "  <hash type=\"md5\">{}</hash>", fd.MD5());
     }
-    if fd.SHA1() != "" {
+    if !fd.SHA1().is_empty() {
         result.push_str(&indent);
         let _ = writeln!(result, "  <hash type=\"sha1\">{}</hash>", fd.SHA1());
     }
-    if fd.SHA256() != "" {
+    if !fd.SHA256().is_empty() {
         result.push_str(&indent);
         let _ = writeln!(result, "  <hash type=\"sha256\">{}</hash>", fd.SHA256());
     }
-    if fd.SHA512() != "" {
+    if !fd.SHA512().is_empty() {
         result.push_str(&indent);
         let _ = writeln!(result, "  <hash type=\"sha512\">{}</hash>", fd.SHA512());
     }
