@@ -62,22 +62,7 @@ fn metalink_failuredoc(msg: String) -> String {
 }
 
 fn get_param(params: &HashMap<&str, &str>, find: &str) -> String {
-    let mut result = String::new();
-    for param in params {
-        if param.0 == &find {
-            result.push_str(param.1);
-        }
-    }
-    result
-}
-
-fn check_for_param(params: &HashMap<&str, &str>, check: &str) -> bool {
-    for param in params {
-        if param.0 == &check {
-            return true;
-        }
-    }
-    false
+    params.get(find).copied().unwrap_or("").to_string()
 }
 
 fn find_in_netblock_country_cache(nbcc: &[StringStringMap], client_ip: &IpAddr) -> String {
@@ -360,8 +345,8 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         }
     }
 
-    if !((check_for_param(&query_params, "repo") && check_for_param(&query_params, "arch"))
-        || check_for_param(&query_params, "path"))
+    if !((query_params.contains_key("repo") && query_params.contains_key("arch"))
+        || query_params.contains_key("path"))
     {
         return http_response(
             metalink,
@@ -378,7 +363,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
     let cache: &MirrorListCacheType;
     let mirrorlist_caches = &p.mirrorlist.MirrorListCache;
 
-    if check_for_param(&query_params, "path") {
+    if query_params.contains_key("path") {
         let mut path = get_param(&query_params, "path");
         path = path.trim_matches('/').to_string();
         let re = Regex::new(r"/+").unwrap();
@@ -411,7 +396,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         }
     } else {
         if get_param(&query_params, "repo").contains("source") {
-            if check_for_param(&query_params, "arch") {
+            if query_params.contains_key("arch") {
                 query_params.remove(&"arch");
             }
             query_params.insert("arch", "source");
@@ -513,7 +498,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
     let mut netblock_results: Vec<(String, i64)> = Vec::new();
     let mut asn_results: Vec<i64> = Vec::new();
     if requested_countries.is_empty()
-        && (!check_for_param(&query_params, "netblock")
+        && (!query_params.contains_key("netblock")
             || get_param(&query_params, "netblock") == "1")
     {
         let hnbc = &p.mirrorlist.HostNetblockCache;
@@ -596,7 +581,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         };
     }
 
-    if check_for_param(&query_params, "repo") && check_for_param(&query_params, "arch") {
+    if query_params.contains_key("repo") && query_params.contains_key("arch") {
         let now = chrono::Utc::now();
         let log_msg = &format!(
             "IP: {}; DATE: {}; COUNTRY: {}; REPO: {}; ARCH: {}\n",
@@ -727,7 +712,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
             file.clone(),
             path_is_dir,
         );
-        if check_for_param(&query_params, "protocol") {
+        if query_params.contains_key("protocol") {
             let protocols = get_param(&query_params, "protocol");
             let mut try_protocols: Vec<&str> = protocols.split(',').collect();
             if !try_protocols.is_empty() {
@@ -799,7 +784,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
     );
 
     let mut protocols_trimmed = false;
-    if check_for_param(&query_params, "protocol") {
+    if query_params.contains_key("protocol") {
         let protocols = get_param(&query_params, "protocol");
         let mut try_protocols: Vec<&str> = protocols.split(',').collect();
         if !try_protocols.is_empty() {
@@ -812,7 +797,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         protocols_trimmed = true;
     }
 
-    if check_for_param(&query_params, "time") {
+    if query_params.contains_key("time") {
         let _ = write!(
             header,
             "\n# database creation time: {}",
@@ -829,14 +814,14 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
             HeaderValue::from_static("application/metalink+xml"),
         );
     } else {
-        if check_for_param(&query_params, "redirect") {
+        if query_params.contains_key("redirect") {
             trim_to_preferred_protocols(&mut hosts_and_urls, &["https", "http"], 1);
             protocols_trimmed = true;
         }
         if !protocols_trimmed {
             trim_to_preferred_protocols(&mut hosts_and_urls, &["https", "http", "ftp"], 1);
         }
-        if check_for_param(&query_params, "redirect") {
+        if query_params.contains_key("redirect") {
             let mut redirect = String::new();
             if !hosts_and_urls.is_empty() {
                 for (_, urls) in hosts_and_urls {
