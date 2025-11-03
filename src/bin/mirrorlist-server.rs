@@ -207,7 +207,7 @@ fn get_same_continent_hosts(
     header
 }
 
-fn weigthed_shuffle(hosts: &mut Vec<i64>, hbc: &[IntIntMap], results: &mut Vec<i64>) {
+fn weighted_shuffle(hosts: &mut Vec<i64>, hbc: &[IntIntMap], results: &mut Vec<i64>) {
     if hosts.is_empty() {
         return;
     }
@@ -783,10 +783,10 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
     {
         let hbc = &p.mirrorlist.HostBandwidthCache;
         // Weighted shuffle by bandwidth
-        weigthed_shuffle(&mut country_results, hbc, &mut all_hosts);
-        weigthed_shuffle(&mut geoip_results, hbc, &mut all_hosts);
-        weigthed_shuffle(&mut continent_results, hbc, &mut all_hosts);
-        weigthed_shuffle(&mut global_results, hbc, &mut all_hosts);
+        weighted_shuffle(&mut country_results, hbc, &mut all_hosts);
+        weighted_shuffle(&mut geoip_results, hbc, &mut all_hosts);
+        weighted_shuffle(&mut continent_results, hbc, &mut all_hosts);
+        weighted_shuffle(&mut global_results, hbc, &mut all_hosts);
     }
     let all_hosts: Vec<_> = all_hosts.into_iter().unique().collect();
 
