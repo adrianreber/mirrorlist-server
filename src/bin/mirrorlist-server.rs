@@ -20,8 +20,8 @@ use ipnet::IpNet;
 use itertools::Itertools;
 use log::{error, info};
 use maxminddb::{geoip2, Reader};
-use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
+use rand::distr::Distribution;
 use rand::seq::SliceRandom;
 use regex::Regex;
 use std::cmp;
@@ -558,7 +558,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         let asn = find_in_ip_tree(p.asn_cache, &client_ip);
         if !asn.1.is_empty() {
             let host_asn_cache = &p.mirrorlist.HostAsnCache;
-              let asn_number = asn.1.parse::<i64>().unwrap_or(-1);
+            let asn_number = asn.1.parse::<i64>().unwrap_or(-1);
             let i = find_in_int_repeated_int_map(host_asn_cache, asn_number);
             if i != -1 {
                 for id in &host_asn_cache[i as usize].value {
@@ -628,11 +628,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
                 );
                 header.push_str(&ret);
             }
-            let ret = do_countrylist(
-                &cache.ByCountry,
-                &mut country_results,
-                country.to_string(),
-            );
+            let ret = do_countrylist(&cache.ByCountry, &mut country_results, country.to_string());
             if !ret.is_empty() {
                 header.push_str(&ret);
             }
@@ -887,11 +883,7 @@ fn metalink_details(fd: &FileDetailsType, indent: String) -> String {
     let mut result = String::new();
     if fd.TimeStamp() != 0 {
         result.push_str(&indent);
-        let _ = writeln!(
-            result,
-            " <mm0:timestamp>{}</mm0:timestamp>",
-            fd.TimeStamp()
-        );
+        let _ = writeln!(result, " <mm0:timestamp>{}</mm0:timestamp>", fd.TimeStamp());
     }
     if fd.Size() != 0 {
         result.push_str(&indent);
@@ -1189,9 +1181,7 @@ async fn main() {
         minimum = match matches.opt_strs("m")[matches.opt_count("m") - 1].parse::<usize>() {
             Ok(mi) => mi,
             _ => {
-                println!(
-                    "Error parsing minimum number of mirrors. Defaulting to {minimum}"
-                );
+                println!("Error parsing minimum number of mirrors. Defaulting to {minimum}");
                 minimum
             }
         };
@@ -1249,16 +1239,21 @@ async fn main() {
             process::exit(1)
         }
     };
-    let mirrorlist : Arc<MirrorList>= Arc::new(match protobuf::Message::parse_from_reader(&mut file) {
-        Ok(f) => f,
-        Err(e) => {
-            error!("Parsing {} failed: {}", &cache_file, e);
-            process::exit(1)
-        }
-    });
+    let mirrorlist: Arc<MirrorList> =
+        Arc::new(match protobuf::Message::parse_from_reader(&mut file) {
+            Ok(f) => f,
+            Err(e) => {
+                error!("Parsing {} failed: {}", &cache_file, e);
+                process::exit(1)
+            }
+        });
 
     if let Some(t) = chrono::DateTime::from_timestamp(mirrorlist.Time.unwrap() as i64, 0) {
-        info!("Database creation time {} ({}) ", t, &mirrorlist.Time.unwrap());
+        info!(
+            "Database creation time {} ({}) ",
+            t,
+            &mirrorlist.Time.unwrap()
+        );
     }
 
     info!("Loading geoip database");

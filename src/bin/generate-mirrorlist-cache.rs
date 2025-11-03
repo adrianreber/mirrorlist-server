@@ -648,10 +648,7 @@ fn get_mlc(
     hosts: &[Host],
     directories: &[db::models::Directory],
     host_category_urls: &[(i32, i32, String)],
-) -> (
-    Vec<MirrorListCacheType>,
-    Vec<FileDetailsCacheDirectoryType>,
-) {
+) -> (Vec<MirrorListCacheType>, Vec<FileDetailsCacheDirectoryType>) {
     let mut mlc: Vec<MirrorListCacheType> = Vec::new();
     let mut fdcdc: Vec<FileDetailsCacheDirectoryType> = Vec::new();
 
