@@ -560,12 +560,13 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         // Do a GeoIP 2 lookup. In the Python implementation
         // this was more complicated as it was doing IPv6, Teredo
         // and IPv4 separately. Not necessary with GeoIP2.
-        client_country = match p.geoip.lookup::<geoip2::Country>(client_ip) {
-            Ok(Some(country)) => match country.country {
-                Some(co) => match co.iso_code {
-                    Some(iso) => iso.to_string(),
-                    None => "N/A".to_string(),
-                },
+        client_country = match p
+            .geoip
+            .lookup(client_ip)
+            .and_then(|r| r.decode::<geoip2::Country>())
+        {
+            Ok(Some(country)) => match country.country.iso_code {
+                Some(iso) => iso.to_string(),
                 None => "N/A".to_string(),
             },
             _ => "N/A".to_string(),
