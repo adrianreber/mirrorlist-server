@@ -1133,12 +1133,8 @@ fn main() {
     };
     let mut cos = CodedOutputStream::new(&mut file);
     let ret = mirrorlist.write_to(&mut cos);
-    if ret.is_err() {
-        println!(
-            "Error writing to file {} : {:#?}",
-            cache_file,
-            ret.expect("Error: ")
-        );
+    if let Err(e) = ret {
+        println!("Error writing to file {} : {:#?}", cache_file, e);
         process::exit(1);
     }
     cos.flush().unwrap();
