@@ -37,6 +37,17 @@ for the Python script mm2_refresh_mirrorlist_cache.
 In Fedora's setup the Python version requires up to 50 minutes and 10GB of memory.
 This Rust version is finished in under one minute and only requires 600MB.
 
+Bundled Dependencies
+--------------------
+
+This project includes a vendored copy of the ``treebitmap`` library
+(https://github.com/hroi/treebitmap) in ``src/treebitmap/``. The original
+crate has been yanked from crates.io and the GitHub repository has been
+archived, so the source code is included directly in this project.
+
+The ``treebitmap`` library is licensed under the MIT license. See
+``src/treebitmap/LICENSE-MIT`` for the full license text.
+
 Building
 --------
 

@@ -20,6 +20,7 @@ use ipnet::IpNet;
 use itertools::Itertools;
 use log::{error, info};
 use maxminddb::{geoip2, Reader};
+use mirrorlist_server::treebitmap::IpLookupTable;
 use rand::distr::weighted::WeightedIndex;
 use rand::distr::Distribution;
 use rand::seq::SliceRandom;
@@ -36,7 +37,6 @@ use std::path::Path;
 use std::process;
 use std::str::FromStr;
 use std::sync::Arc;
-use treebitmap::IpLookupTable;
 
 fn metalink_header() -> String {
     let mut header = String::new();
