@@ -615,7 +615,6 @@ dependencies = [
  "regex",
  "tempfile",
  "tokio",
- "treebitmap",
 ]
 
 [[package]]
@@ -1038,12 +1037,6 @@ checksum = "e672c95779cf947c5311f83787af4fa8fffd12fb27e4993211a84bdfd9610f9c"
 dependencies = [
  "once_cell",
 ]
-
-[[package]]
-name = "treebitmap"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bf423939ac9ccf4083788879b883a7149176586f9cf8b0fb1fd88b66ad692b5"
 
 [[package]]
 name = "try-lock"
