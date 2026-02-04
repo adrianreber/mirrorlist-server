@@ -764,27 +764,27 @@ fn get_mlc(
                 let fdcf: &mut FileDetailsCacheFilesType = &mut fdcfc[i as usize];
                 let fdc = &mut fdcf.FileDetails;
                 let mut file_detail_type = FileDetailsType::new();
-                if fd.2.is_none() {
+                if let Some(ts) = fd.2 {
+                    file_detail_type.set_TimeStamp(ts.try_into().unwrap());
+                } else {
                     file_detail_type.set_TimeStamp(0);
-                } else {
-                    file_detail_type.set_TimeStamp(fd.2.unwrap().try_into().unwrap());
                 }
-                if fd.3.is_none() {
+                if let Some(size) = fd.3 {
+                    file_detail_type.set_Size(size.try_into().unwrap());
+                } else {
                     file_detail_type.set_Size(0);
-                } else {
-                    file_detail_type.set_Size(fd.3.unwrap().try_into().unwrap());
                 }
-                if fd.4.is_some() {
-                    file_detail_type.set_SHA1(fd.4.as_ref().unwrap().clone());
+                if let Some(sha1) = &fd.4 {
+                    file_detail_type.set_SHA1(sha1.clone());
                 }
-                if fd.5.is_some() {
-                    file_detail_type.set_MD5(fd.5.as_ref().unwrap().clone());
+                if let Some(md5) = &fd.5 {
+                    file_detail_type.set_MD5(md5.clone());
                 }
-                if fd.6.is_some() {
-                    file_detail_type.set_SHA256(fd.6.as_ref().unwrap().clone());
+                if let Some(sha256) = &fd.6 {
+                    file_detail_type.set_SHA256(sha256.clone());
                 }
-                if fd.7.is_some() {
-                    file_detail_type.set_SHA512(fd.7.as_ref().unwrap().clone());
+                if let Some(sha512) = &fd.7 {
+                    file_detail_type.set_SHA512(sha512.clone());
                 }
                 fdc.push(file_detail_type);
             }
@@ -927,10 +927,10 @@ fn get_rrc(c: &mut PgConnection) -> Vec<StringStringMap> {
     let rrc_raw = get_repository_redirects(c);
 
     for rr in rrc_raw {
-        let mut r = StringStringMap::new();
-        if rr.1.is_some() {
+        if let Some(value) = rr.1 {
+            let mut r = StringStringMap::new();
             r.set_key(rr.0.clone());
-            r.set_value(rr.1.unwrap().clone());
+            r.set_value(value.clone());
             rrc.push(r);
         }
     }
@@ -975,11 +975,13 @@ fn get_drc(repositories: &[Repository]) -> Vec<StringBoolMap> {
     let mut drc: Vec<StringBoolMap> = Vec::new();
 
     for r in repositories {
-        let mut dr = StringBoolMap::new();
-        if r.0.is_some() && r.5 {
-            dr.set_key(r.0.as_ref().unwrap().clone());
-            dr.set_value(r.5);
-            drc.push(dr);
+        if let Some(key) = &r.0 {
+            if r.5 {
+                let mut dr = StringBoolMap::new();
+                dr.set_key(key.clone());
+                dr.set_value(r.5);
+                drc.push(dr);
+            }
         }
     }
 
