@@ -11,7 +11,7 @@ lto = true
 hyper = { version = "0.14", features = ["server", "http1", "http2", "runtime"] }
 log = "0.4"
 pretty_env_logger = "0.5"
-chrono = "0.4.43"
+chrono = "0.4.44"
 protobuf = "3.7.2"
 regex = "1"
 ipnet = "2.11.0"
