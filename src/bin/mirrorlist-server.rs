@@ -513,7 +513,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
             if net.contains(&client_ip) {
                 for id in &hnb.value {
                     // Check if the host actually caries the requested content
-                    if find_in_int_repeated_int_map(&cache.ByHostId, *id) > 0 {
+                    if find_in_int_repeated_int_map(&cache.ByHostId, *id) >= 0 {
                         netblock_results.push((String::from(&net.to_string()), *id));
                     }
                 }
