@@ -378,3 +378,111 @@ fn do_mirrorlist_test() {
     drop(log_file);
     dir.close().unwrap();
 }
+
+#[test]
+fn netblock_host_at_index_zero_test() {
+    // Regression test for off-by-one error:
+    // find_in_int_repeated_int_map() returns a 0-based index (-1 when not
+    // found). The old code used "> 0" which incorrectly excluded hosts
+    // found at index 0 in ByHostId from netblock results.
+    let mut mirrorlist = MirrorList::new();
+    let mut mlc: Vec<MirrorListCacheType> = Vec::new();
+    let mut ml1 = MirrorListCacheType::new();
+    ml1.set_directory("test/netblock/path".to_string());
+
+    // Host 42 is at index 0 in ByHostId — this is the case the bug missed
+    let mut by_hostid: Vec<IntRepeatedIntMap> = Vec::new();
+    let mut hcurl_id = IntRepeatedIntMap::new();
+    hcurl_id.key = Some(42);
+    hcurl_id.value = vec![421];
+    by_hostid.push(hcurl_id);
+
+    hcurl_id = IntRepeatedIntMap::new();
+    hcurl_id.key = Some(99);
+    hcurl_id.value = vec![991];
+    by_hostid.push(hcurl_id);
+
+    ml1.ByHostId = by_hostid;
+    mlc.push(ml1);
+    mirrorlist.MirrorListCache = mlc;
+
+    // Set up HostNetblockCache so that 10.0.0.0/8 maps to host 42
+    let mut hnb = StringRepeatedIntMap::new();
+    hnb.key = Some("10.0.0.0/8".to_string());
+    hnb.value = vec![42];
+    mirrorlist.HostNetblockCache = vec![hnb];
+
+    let mut hbc: Vec<IntIntMap> = Vec::new();
+    let mut hb = IntIntMap::new();
+    hb.set_key(42);
+    hb.set_value(100);
+    hbc.push(hb);
+    hb = IntIntMap::new();
+    hb.set_key(99);
+    hb.set_value(100);
+    hbc.push(hb);
+    mirrorlist.HostBandwidthCache = hbc;
+
+    let mut hcurl: Vec<IntStringMap> = Vec::new();
+    let mut hc_url = IntStringMap::new();
+    hc_url.set_key(421);
+    hc_url.set_value("http://mirror42.example.com/pub".to_string());
+    hcurl.push(hc_url);
+    hc_url = IntStringMap::new();
+    hc_url.set_key(991);
+    hc_url.set_value("http://mirror99.example.com/pub".to_string());
+    hcurl.push(hc_url);
+    mirrorlist.HCUrlCache = hcurl;
+
+    let dir = tempdir().unwrap();
+    let file_path = dir.path().join("global");
+    let mut file = File::create(&file_path).unwrap();
+    // Use a different subnet so ASN lookup does not match 10.0.0.1
+    writeln!(file, "192.168.0.0/16 12345").unwrap();
+    file.flush().unwrap();
+
+    let asn_cache = create_ip_tree(file_path.to_str().unwrap());
+    let geoip_reader =
+        maxminddb::Reader::open_readfile("testdata/GeoIP2-Country-Test.mmdb").unwrap();
+    let cc: HashMap<String, String> = HashMap::new();
+    let log_file = File::create(dir.path().join("log")).unwrap();
+
+    // Client IP 10.0.0.1 is inside the 10.0.0.0/8 netblock
+    let remote = IpAddr::from_str("10.0.0.1").unwrap();
+
+    let mut p = DoMirrorlist {
+        mirrorlist: &mirrorlist,
+        remote: &remote,
+        asn_cache: &asn_cache,
+        geoip: &geoip_reader,
+        cc: &cc,
+        log_file: &log_file,
+        minimum: 1,
+    };
+
+    let mut request = Request::new(Body::empty());
+    *request.uri_mut() = "/mirrorlist?path=test/netblock/path&ip=10.0.0.1"
+        .parse()
+        .unwrap();
+    let response = do_mirrorlist(request, &mut p);
+    assert_eq!(response.status(), 200);
+    let body = Runtime::new()
+        .unwrap()
+        .block_on(read_response_body(response))
+        .unwrap();
+    // Host 42 (at ByHostId index 0) must appear via netblock preference
+    assert!(
+        body.contains("Using preferred netblock"),
+        "Expected netblock header but got: {}",
+        body
+    );
+    assert!(
+        body.contains("http://mirror42.example.com/pub/"),
+        "Expected host 42 URL in response but got: {}",
+        body
+    );
+
+    drop(file);
+    drop(log_file);
+    dir.close().unwrap();
+}
