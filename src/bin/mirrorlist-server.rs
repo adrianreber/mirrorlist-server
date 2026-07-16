@@ -578,7 +578,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         let log_msg = &format!(
             "IP: {}; DATE: {}; COUNTRY: {}; REPO: {}; ARCH: {}\n",
             client_ip,
-            &now.format("%Y-%m-%d").to_string(),
+            now.format("%Y-%m-%d"),
             client_country,
             get_param(&query_params, "repo"),
             get_param(&query_params, "arch")
@@ -793,7 +793,7 @@ fn do_mirrorlist(req: Request<Body>, p: &mut DoMirrorlist) -> Response<Body> {
         let _ = write!(
             header,
             "\n# database creation time: {}",
-            &p.mirrorlist.Time.unwrap(),
+            p.mirrorlist.Time.unwrap(),
         );
     }
 
@@ -1212,7 +1212,7 @@ async fn main() {
     let mut file = match File::open(Path::new(&cache_file)) {
         Ok(f) => f,
         Err(e) => {
-            error!("Opening {} failed: {}", &cache_file, e);
+            error!("Opening {} failed: {}", cache_file, e);
             process::exit(1)
         }
     };
@@ -1220,7 +1220,7 @@ async fn main() {
         Arc::new(match protobuf::Message::parse_from_reader(&mut file) {
             Ok(f) => f,
             Err(e) => {
-                error!("Parsing {} failed: {}", &cache_file, e);
+                error!("Parsing {} failed: {}", cache_file, e);
                 process::exit(1)
             }
         });
@@ -1229,7 +1229,7 @@ async fn main() {
         info!(
             "Database creation time {} ({}) ",
             t,
-            &mirrorlist.Time.unwrap()
+            mirrorlist.Time.unwrap()
         );
     }
 

@@ -37,7 +37,7 @@ fn metalink_failuredoc_test() {
     let s = metalink_failuredoc(test.clone());
     assert!(s.contains(&start));
     assert!(s.contains(&end));
-    let result = format!("<!-- {}\n-->\n</metalink>\n", &test);
+    let result = format!("<!-- {}\n-->\n</metalink>\n", test);
     assert!(s.contains(&result));
 }
 

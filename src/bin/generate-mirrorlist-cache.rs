@@ -1125,11 +1125,11 @@ fn main() {
         mirrorlist.NetblockCountryCache = ncc;
     }
 
-    print_step(format!("Writing to {}", &cache_file));
+    print_step(format!("Writing to {}", cache_file));
     let mut file = match File::create(&cache_file) {
         Ok(file) => file,
         _ => {
-            println!("Error opening file {}", &cache_file);
+            println!("Error opening file {}", cache_file);
             process::exit(1);
         }
     };
