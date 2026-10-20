@@ -806,6 +806,13 @@ fn get_mlc(
             continue;
         }
 
+        // A category that is not attached to any host (e.g. after it has been
+        // removed from all mirrors) has nothing to list: skip its directories
+        // instead of panicking on the missing host_cat_hash entry below.
+        if !host_cat_hash.contains_key(&category_id) {
+            continue;
+        }
+
         let mut ml = MirrorListCacheType::new();
         ml.set_directory(d.name.clone());
         /* This only works as long as there are not UTF-8 characters in the path names. */
