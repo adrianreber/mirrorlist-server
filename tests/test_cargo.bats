@@ -13,13 +13,27 @@ setup_file() {
         --publish "${DB_PORT}:5432" \
         registry.access.redhat.com/hi/postgresql:latest
 
-    # Wait for PostgreSQL to be ready
-    for i in $(seq 1 30); do
-        if podman exec "${CONTAINER_NAME}" pg_isready -U postgres 2>/dev/null; then
+    # Wait for PostgreSQL to be ready.
+    #
+    # Ask over TCP and not over the unix socket. While initializing the
+    # database the entrypoint starts a temporary server with
+    # listen_addresses='' on the same socket and stops it again before
+    # starting the real one, so a check on the socket can succeed on a
+    # server which is about to go away. The temporary server cannot answer
+    # on TCP, which makes this wait for the real one.
+    for _ in $(seq 1 60); do
+        if podman exec "${CONTAINER_NAME}" \
+            pg_isready -h localhost -U postgres 2>/dev/null; then
             break
         fi
         sleep 1
     done
+
+    if ! podman exec "${CONTAINER_NAME}" pg_isready -h localhost -U postgres; then
+        echo "PostgreSQL did not come up" >&2
+        podman logs "${CONTAINER_NAME}" >&2
+        return 1
+    fi
 
     # Create database and load schema
     podman exec "${CONTAINER_NAME}" createdb -U postgres "${DB_NAME}"
