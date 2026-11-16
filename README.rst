@@ -55,6 +55,20 @@ The project can be built using::
 
     $ cargo build
 
+Testing
+-------
+
+The test suite needs ``bats`` and ``podman``. It starts a PostgreSQL
+container, loads the test schema and runs ``cargo build``, ``cargo clippy``,
+``cargo fmt --check`` and ``cargo test``::
+
+    $ bats tests/test_cargo.bats
+
+The PostgreSQL container publishes port 5432. If another PostgreSQL server
+already listens on 5432, set ``DB_PORT`` to another port::
+
+    $ DB_PORT=15432 bats tests/test_cargo.bats
+
 Usage
 -----
 

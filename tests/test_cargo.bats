@@ -3,7 +3,7 @@
 CONTAINER_NAME="mirrorlist-test-postgres"
 POSTGRES_PASSWORD="test_password"
 DB_NAME="test_db"
-DB_PORT=5432
+DB_PORT="${DB_PORT:-5432}"
 
 setup_file() {
     # Start PostgreSQL container
